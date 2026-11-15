@@ -1,4 +1,5 @@
--- Permite regenerar propina: el índice único ignora filas expiradas.
+-- Permite regenerar propina: el índice único solo aplica a propinas activas
+-- (pendiente/pagado). Las expiradas no bloquean un nuevo cobro_origen_id.
 
 DROP INDEX IF EXISTS public.cobros_propina_origen_uidx;
 

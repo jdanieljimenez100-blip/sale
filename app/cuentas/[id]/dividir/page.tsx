@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
-import { DemoTokenBar } from "@/components/DemoTokenBar";
 import { DividirCuenta } from "@/components/DividirCuenta";
+import { MeseroChrome } from "@/components/MeseroChrome";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +12,11 @@ export default async function DividirPage({
 }: Props): Promise<ReactElement> {
   const { id } = await params;
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-6 px-4 py-8">
+    <MeseroChrome>
       <Link href={`/cuentas/${id}`} className="text-sm underline">
-        ← Cuenta
+        ← Mesa
       </Link>
-      <DemoTokenBar />
       <DividirCuenta cuentaId={id} />
-    </main>
+    </MeseroChrome>
   );
 }

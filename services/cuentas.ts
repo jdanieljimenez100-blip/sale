@@ -1,3 +1,4 @@
+import { inicioDelDiaMexicoCity } from "@/lib/dia-mexico";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { EstadoCuenta, Database } from "@/lib/supabase/types";
 import { calcularEstadoCuenta } from "@/services/cuenta-estado";
@@ -10,20 +11,89 @@ export type CuentaConDetalle = CuentaRow & {
   partidas: PartidaRow[];
   cobros: CobroRow[];
   pagado_consumo_centavos: number;
+  mesero_nombre: string;
+};
+
+export type CuentaListaItem = CuentaRow & {
+  mesero_nombre: string;
+  pagado_consumo_centavos: number;
+  restante_centavos: number;
+};
+
+export type ResumenMesas = {
+  cobradoHoyCentavos: number;
+  porCobrarCentavos: number;
+  mesasAbiertas: number;
 };
 
 export { calcularEstadoCuenta };
 
-export async function listarCuentas(): Promise<CuentaRow[]> {
+export async function listarCuentasConResumen(): Promise<{
+  cuentas: CuentaListaItem[];
+  resumen: ResumenMesas;
+}> {
   const supabase = createServiceClient();
-  const { data, error } = await supabase
-    .from("cuentas")
-    .select("*")
-    .order("mesa", { ascending: true });
-  if (error) {
-    throw new Error(`No se pudieron listar cuentas: ${error.message}`);
+  const inicioHoy = inicioDelDiaMexicoCity();
+
+  const [
+    { data: cuentas, error },
+    { data: meseros, error: meserosError },
+    { data: cobros, error: cobrosError },
+    { data: cobrosHoy, error: hoyError },
+  ] = await Promise.all([
+    supabase.from("cuentas").select("*").order("mesa", { ascending: true }),
+    supabase.from("meseros").select("id, nombre"),
+    supabase
+      .from("cobros")
+      .select("cuenta_id, tipo, estado, monto_centavos")
+      .eq("tipo", "consumo")
+      .eq("estado", "pagado"),
+    supabase
+      .from("cobros")
+      .select("monto_centavos")
+      .eq("estado", "pagado")
+      .gte("pagado_at", inicioHoy.toISOString()),
+  ]);
+
+  if (error || meserosError || cobrosError || hoyError) {
+    throw new Error("No se pudieron listar las mesas");
   }
-  return data;
+
+  const nombres = new Map((meseros ?? []).map((m) => [m.id, m.nombre] as const));
+  const pagadoPorCuenta = new Map<string, number>();
+  for (const c of cobros ?? []) {
+    if (!c.cuenta_id) {
+      continue;
+    }
+    pagadoPorCuenta.set(
+      c.cuenta_id,
+      (pagadoPorCuenta.get(c.cuenta_id) ?? 0) + c.monto_centavos,
+    );
+  }
+
+  const items: CuentaListaItem[] = (cuentas ?? []).map((cuenta) => {
+    const pagado = pagadoPorCuenta.get(cuenta.id) ?? 0;
+    return {
+      ...cuenta,
+      mesero_nombre: nombres.get(cuenta.mesero_id) ?? "Mesero",
+      pagado_consumo_centavos: pagado,
+      restante_centavos: Math.max(0, cuenta.total_centavos - pagado),
+    };
+  });
+
+  const abiertas = items.filter((c) => c.estado !== "pagada");
+  const resumen: ResumenMesas = {
+    cobradoHoyCentavos: (cobrosHoy ?? []).reduce((s, c) => s + c.monto_centavos, 0),
+    porCobrarCentavos: abiertas.reduce((s, c) => s + c.restante_centavos, 0),
+    mesasAbiertas: abiertas.length,
+  };
+
+  return { cuentas: items, resumen };
+}
+
+export async function listarCuentas(): Promise<CuentaRow[]> {
+  const { cuentas } = await listarCuentasConResumen();
+  return cuentas;
 }
 
 export async function obtenerCuenta(
@@ -36,23 +106,28 @@ export async function obtenerCuenta(
     .eq("id", cuentaId)
     .maybeSingle();
   if (error) {
-    throw new Error(`No se pudo leer la cuenta: ${error.message}`);
+    throw new Error("No se pudo leer la mesa");
   }
   if (!cuenta) {
     return null;
   }
 
-  const [{ data: partidas, error: partidasError }, { data: cobros, error: cobrosError }] =
-    await Promise.all([
-      supabase.from("partidas").select("*").eq("cuenta_id", cuentaId),
-      supabase.from("cobros").select("*").eq("cuenta_id", cuentaId),
-    ]);
+  const [
+    { data: partidas, error: partidasError },
+    { data: cobros, error: cobrosError },
+    { data: mesero, error: meseroError },
+  ] = await Promise.all([
+    supabase.from("partidas").select("*").eq("cuenta_id", cuentaId),
+    supabase.from("cobros").select("*").eq("cuenta_id", cuentaId).order("created_at"),
+    supabase
+      .from("meseros")
+      .select("nombre")
+      .eq("id", cuenta.mesero_id)
+      .maybeSingle(),
+  ]);
 
-  if (partidasError) {
-    throw new Error(`No se pudieron leer partidas: ${partidasError.message}`);
-  }
-  if (cobrosError) {
-    throw new Error(`No se pudieron leer cobros: ${cobrosError.message}`);
+  if (partidasError || cobrosError || meseroError) {
+    throw new Error("No se pudo cargar el detalle de la mesa");
   }
 
   const pagadoConsumo = (cobros ?? [])
@@ -64,6 +139,7 @@ export async function obtenerCuenta(
     partidas: partidas ?? [],
     cobros: cobros ?? [],
     pagado_consumo_centavos: pagadoConsumo,
+    mesero_nombre: mesero?.nombre ?? "Mesero",
   };
 }
 
@@ -82,7 +158,7 @@ export async function recalcularEstadoCuenta(cuentaId: string): Promise<EstadoCu
     p_estado: estado,
   });
   if (error) {
-    throw new Error(`No se pudo actualizar estado: ${error.message}`);
+    throw new Error("No se pudo actualizar el estado de la mesa");
   }
   return estado;
 }

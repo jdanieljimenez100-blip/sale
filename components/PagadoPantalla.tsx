@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactElement } from "react";
+import { TicketPagadoBloque } from "@/components/TicketPagadoBloque";
 import { apiFetch } from "@/lib/client-api";
 import { formatearMxn, pesosTextoACentavos } from "@/lib/money";
 import { calcularMontoPropinaPorcentaje } from "@/lib/propina";
@@ -183,6 +184,11 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
       </section>
     ) : null;
 
+  const bloqueTicket =
+    cobro.cuenta_id != null ? (
+      <TicketPagadoBloque cuentaId={cobro.cuenta_id} />
+    ) : null;
+
   const bloqueListo =
     paso === "listo" || (cobro.tipo === "propina" && paso !== "resena") ? (
       <div className="flex flex-col gap-3">
@@ -208,6 +214,7 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
           <h1 className="text-5xl font-bold">¡Gracias!</h1>
           <p className="mt-4 text-2xl">{formatearMxn(cobro.monto_centavos)}</p>
         </div>
+        {bloqueTicket}
         {bloqueResena}
         {paso === "listo" ? bloqueListo : null}
         {paso === "resena" ? (
@@ -231,6 +238,8 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
         <h1 className="mt-4 text-5xl font-bold">Pagado</h1>
         <p className="mt-4 text-2xl">{formatearMxn(cobro.monto_centavos)}</p>
       </div>
+
+      {bloqueTicket}
 
       {paso === "propina" ? (
         <section className="rounded-2xl bg-white/90 p-4 text-left">

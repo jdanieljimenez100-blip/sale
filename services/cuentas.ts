@@ -163,17 +163,13 @@ export async function recalcularEstadoCuenta(cuentaId: string): Promise<EstadoCu
   if (!detalle) {
     throw new Error("Cuenta no encontrada");
   }
-  const estado = calcularEstadoCuenta(
-    detalle.total_centavos,
-    detalle.pagado_consumo_centavos,
-  );
+  // Usa sale_recalc_cuenta para totals + ticket al pasar a pagada.
   const supabase = createServiceClient();
-  const { error } = await supabase.rpc("sale_set_cuenta_estado", {
+  const { data, error } = await supabase.rpc("sale_recalc_cuenta", {
     p_cuenta_id: cuentaId,
-    p_estado: estado,
   });
-  if (error) {
+  if (error || !data) {
     throw new Error("No se pudo actualizar el estado de la mesa");
   }
-  return estado;
+  return data.estado;
 }

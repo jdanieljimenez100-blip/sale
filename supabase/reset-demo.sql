@@ -5,6 +5,7 @@
 BEGIN;
 
 DELETE FROM public.resenas;
+DELETE FROM public.tickets;
 DELETE FROM public.cobros;
 
 DELETE FROM public.partidas

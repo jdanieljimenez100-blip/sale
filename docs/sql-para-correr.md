@@ -94,6 +94,14 @@ Luego, si aún no tienes el menú demo, corre el bloque de `menu_items` en:
 
 `supabase/seed.sql`
 
+## 14) Tickets escaneables
+
+`supabase/migrations/20261117_tickets.sql`
+
+- Tabla `tickets` (cuenta_id PK, token único, folio identity; RLS sin policies).
+- Actualiza `sale_recalc_cuenta` para insertar ticket al pasar a `pagada`
+  (`ON CONFLICT DO NOTHING`).
+
 ## Verificación
 
 ```sql

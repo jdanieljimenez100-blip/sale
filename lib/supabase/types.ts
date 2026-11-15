@@ -170,6 +170,25 @@ export type Database = {
         };
         Relationships: [];
       };
+      tickets: {
+        Row: {
+          cuenta_id: string;
+          token: string;
+          folio: number;
+          created_at: string;
+        };
+        Insert: {
+          cuenta_id: string;
+          token?: string;
+          created_at?: string;
+        };
+        Update: {
+          cuenta_id?: string;
+          token?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       bitacora: {
         Row: {
           id: string;
@@ -323,6 +342,12 @@ export type Database = {
           p_negocio_id: string;
           p_mesero_id: string;
           p_mesa: string;
+        };
+        Returns: Database["public"]["Tables"]["cuentas"]["Row"];
+      };
+      sale_recalc_cuenta: {
+        Args: {
+          p_cuenta_id: string;
         };
         Returns: Database["public"]["Tables"]["cuentas"]["Row"];
       };

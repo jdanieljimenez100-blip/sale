@@ -55,6 +55,18 @@ Recrea `cobros_propina_origen_uidx` para permitir regenerar el QR de propina
 (`WHERE tipo = 'propina' AND estado <> 'expirado'`).
 Si ya lo corriste en remoto, no lo vuelvas a ejecutar.
 
+## 8) PIN / rol en meseros
+
+`supabase/migrations/20261116_meseros_pin_sesion.sql`
+
+## 9) Abrir / cerrar mesas + RPCs
+
+`supabase/migrations/20261116_cuentas_abrir_cerrar.sql`
+
+## 10) Bitácora
+
+`supabase/migrations/20261116_bitacora.sql`
+
 ## Verificación
 
 ```sql

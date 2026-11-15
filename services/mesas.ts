@@ -12,6 +12,7 @@ import {
 import { pesosTextoACentavos } from "@/lib/money";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
+import { registrarBitacora } from "@/services/bitacora";
 import { obtenerCuenta } from "@/services/cuentas";
 
 type CuentaRow = Database["public"]["Tables"]["cuentas"]["Row"];
@@ -41,6 +42,11 @@ export async function abrirMesa(input: {
     }
     throw new Error("No se pudo abrir la mesa");
   }
+  await registrarBitacora(input.sesion.meseroId, "abrir_mesa", {
+    cuentaId: data.id,
+    mesa: data.mesa,
+    meseroId,
+  });
   return data;
 }
 
@@ -146,5 +152,9 @@ export async function cerrarMesa(input: {
   if (error || !data) {
     throw new Error(error?.message ?? "No se pudo cerrar la mesa");
   }
+  await registrarBitacora(input.sesion.meseroId, "cerrar_mesa", {
+    cuentaId: data.id,
+    mesa: data.mesa,
+  });
   return data;
 }

@@ -1,6 +1,7 @@
 import type { MeseroPublico } from "@/lib/meseros-types";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
+import { peyUlidUltimos4, registrarBitacora } from "@/services/bitacora";
 
 export type { MeseroPublico };
 
@@ -79,6 +80,7 @@ export async function crearMesero(input: {
 export async function actualizarCuentaPeyMesero(
   meseroId: string,
   peyBankAccountId: string | null,
+  actorMeseroId?: string,
 ): Promise<MeseroPublico> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
@@ -90,6 +92,10 @@ export async function actualizarCuentaPeyMesero(
   if (error || !data) {
     throw new Error("No se pudo actualizar la cuenta pey del mesero");
   }
+  await registrarBitacora(actorMeseroId ?? meseroId, "cuenta_pey", {
+    meseroId,
+    peyUltimos4: peyUlidUltimos4(peyBankAccountId),
+  });
   return aPublico(data);
 }
 
@@ -112,6 +118,7 @@ export async function actualizarMeseroAdmin(input: {
   rol?: "mesero" | "admin";
   activo?: boolean;
   peyBankAccountId?: string | null;
+  actorMeseroId?: string;
 }): Promise<MeseroPublico> {
   const { hashPin, validarPin } = await import("@/lib/auth/pin");
   const actual = await obtenerMesero(input.meseroId);
@@ -121,6 +128,9 @@ export async function actualizarMeseroAdmin(input: {
 
   const update: Database["public"]["Tables"]["meseros"]["Update"] = {};
   let invalidaSesion = false;
+  let cambioPin = false;
+  let cambioRol: string | undefined;
+  let cambioActivo: boolean | undefined;
   if (input.pin !== undefined) {
     const rolParaPin = input.rol ?? actual.rol;
     validarPin(input.pin, rolParaPin);
@@ -128,6 +138,7 @@ export async function actualizarMeseroAdmin(input: {
     update.pin_intentos_fallidos = 0;
     update.pin_bloqueado_hasta = null;
     invalidaSesion = true;
+    cambioPin = true;
   }
   if (input.rol !== undefined && input.rol !== actual.rol) {
     if (actual.rol === "admin" && input.rol === "mesero") {
@@ -137,6 +148,7 @@ export async function actualizarMeseroAdmin(input: {
     }
     update.rol = input.rol;
     invalidaSesion = true;
+    cambioRol = input.rol;
   }
   if (input.activo !== undefined && input.activo !== actual.activo) {
     if (actual.rol === "admin" && input.activo === false) {
@@ -146,6 +158,7 @@ export async function actualizarMeseroAdmin(input: {
     }
     update.activo = input.activo;
     invalidaSesion = true;
+    cambioActivo = input.activo;
   }
   if (input.peyBankAccountId !== undefined) {
     update.pey_bank_account_id = input.peyBankAccountId;
@@ -164,5 +177,30 @@ export async function actualizarMeseroAdmin(input: {
   if (error || !data) {
     throw new Error("No se pudo actualizar el mesero");
   }
+
+  const actor = input.actorMeseroId ?? input.meseroId;
+  const sujeto = { meseroId: input.meseroId };
+  if (cambioPin) {
+    await registrarBitacora(actor, "cambio_pin", sujeto);
+  }
+  if (cambioRol !== undefined) {
+    await registrarBitacora(actor, "cambio_rol", {
+      ...sujeto,
+      rol: cambioRol,
+    });
+  }
+  if (cambioActivo !== undefined) {
+    await registrarBitacora(actor, "cambio_activo", {
+      ...sujeto,
+      activo: cambioActivo,
+    });
+  }
+  if (input.peyBankAccountId !== undefined) {
+    await registrarBitacora(actor, "cuenta_pey", {
+      ...sujeto,
+      peyUltimos4: peyUlidUltimos4(input.peyBankAccountId),
+    });
+  }
+
   return aPublico(data);
 }

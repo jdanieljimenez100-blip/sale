@@ -17,12 +17,16 @@ export async function PATCH(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    await requireSesion(request, { rol: "admin" });
+    const sesion = await requireSesion(request, { rol: "admin" });
     const { id } = await context.params;
     uuidSchema.parse(id);
     const json: unknown = await request.json();
     const input = bodySchema.parse(json);
-    const mesero = await actualizarCuentaPeyMesero(id, input.peyBankAccountId);
+    const mesero = await actualizarCuentaPeyMesero(
+      id,
+      input.peyBankAccountId,
+      sesion.meseroId,
+    );
     return NextResponse.json({ mesero });
   } catch (error) {
     return jsonError(error);

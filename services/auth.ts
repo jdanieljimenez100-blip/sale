@@ -4,6 +4,7 @@ import { HttpError } from "@/lib/api-error";
 import { demoTokenValido } from "@/lib/demo-auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
+import { registrarBitacora } from "@/services/bitacora";
 
 type MeseroRow = Database["public"]["Tables"]["meseros"]["Row"];
 
@@ -26,6 +27,9 @@ export async function loginConPin(input: {
     .maybeSingle();
 
   if (error || !mesero || !mesero.pin_hash) {
+    await registrarBitacora(input.meseroId, "login_fallido", {
+      motivo: "mesero_o_pin_ausente",
+    });
     throw new HttpError(MENSAJE_PIN, 401);
   }
 
@@ -37,15 +41,31 @@ export async function loginConPin(input: {
     throw new Error("No se pudo validar el PIN");
   }
   if (reserva === "bloqueado") {
+    await registrarBitacora(mesero.id, "login_bloqueo", {});
     throw new HttpError("Demasiados intentos. Espera unos minutos.", 423);
   }
 
   const ok = verificarPin(input.pin, mesero.pin_hash);
   if (!ok) {
+    await registrarBitacora(mesero.id, "login_fallido", { motivo: "pin" });
+    const { data: trasFallo } = await supabase
+      .from("meseros")
+      .select("pin_bloqueado_hasta")
+      .eq("id", mesero.id)
+      .maybeSingle();
+    if (
+      trasFallo?.pin_bloqueado_hasta &&
+      new Date(trasFallo.pin_bloqueado_hasta).getTime() > Date.now()
+    ) {
+      await registrarBitacora(mesero.id, "login_bloqueo", {});
+    }
     throw new HttpError(MENSAJE_PIN, 401);
   }
 
   if (!mesero.activo) {
+    await registrarBitacora(mesero.id, "login_fallido", {
+      motivo: "inactivo",
+    });
     throw new HttpError(MENSAJE_PIN, 401);
   }
 
@@ -56,6 +76,8 @@ export async function loginConPin(input: {
       pin_bloqueado_hasta: null,
     })
     .eq("id", mesero.id);
+
+  await registrarBitacora(mesero.id, "login_ok", { rol: mesero.rol });
 
   return {
     meseroId: mesero.id,

@@ -20,7 +20,7 @@ export async function PATCH(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    await requireSesion(request, { rol: "admin" });
+    const sesion = await requireSesion(request, { rol: "admin" });
     const { id } = await context.params;
     uuidSchema.parse(id);
     const json: unknown = await request.json();
@@ -31,6 +31,7 @@ export async function PATCH(
       rol: body.rol,
       activo: body.activo,
       peyBankAccountId: body.peyBankAccountId,
+      actorMeseroId: sesion.meseroId,
     });
     return NextResponse.json({ mesero });
   } catch (error) {

@@ -24,12 +24,13 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function PUT(request: Request): Promise<NextResponse> {
   try {
-    await requireSesion(request, { rol: "admin" });
+    const sesion = await requireSesion(request, { rol: "admin" });
     const json: unknown = await request.json();
     const body = bodySchema.parse(json);
     const config = await actualizarConfigPropinas({
       propinaPorcentajes: body.propinaPorcentajes,
       repartoCocinaPct: body.repartoCocinaPct,
+      actorMeseroId: sesion.meseroId,
     });
     return NextResponse.json(config);
   } catch (error) {

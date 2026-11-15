@@ -5,6 +5,7 @@ import {
 import { PROPINA_PORCENTAJES_DEFAULT } from "@/lib/propina";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
+import { registrarBitacora } from "@/services/bitacora";
 
 type NegocioRow = Database["public"]["Tables"]["negocios"]["Row"];
 
@@ -78,6 +79,7 @@ export async function porcentajesPropinaPorCuenta(
 export async function actualizarConfigPropinas(input: {
   propinaPorcentajes: number[];
   repartoCocinaPct: number;
+  actorMeseroId?: string;
 }): Promise<ConfigPropinasNegocio> {
   const porcentajes = validarPropinaPorcentajes(input.propinaPorcentajes);
   const reparto = validarRepartoCocinaPct(input.repartoCocinaPct);
@@ -93,6 +95,12 @@ export async function actualizarConfigPropinas(input: {
     .single();
   if (error || !data) {
     throw new Error("No se pudo guardar la configuración de propinas");
+  }
+  if (input.actorMeseroId) {
+    await registrarBitacora(input.actorMeseroId, "ajuste_propinas", {
+      propinaPorcentajes: porcentajes,
+      repartoCocinaPct: reparto,
+    });
   }
   return {
     propinaPorcentajes: [...data.propina_porcentajes],

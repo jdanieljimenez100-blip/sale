@@ -1,16 +1,34 @@
 # Checklist de demo — Sale
 
+## Publicar (manual — falta login local)
+
+```bash
+# 1) Repo público
+# Instala gh o crea el repo en GitHub y:
+git remote add origin https://github.com/<tu-usuario>/sale.git
+git push -u origin master
+
+# 2) Vercel
+npx vercel login
+npx vercel --prod
+# En el dashboard de Vercel agrega las env del .env.example
+```
+
 ## Antes de salir a escena
 
 1. Variables en Vercel (y local `.env.local`):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (Dashboard → Settings → API → service_role)
-   - `DEMO_ACCESS_TOKEN`
+   - `SUPABASE_SERVICE_ROLE_KEY` (opcional; hay RPCs `sale_*` si falta)
+   - `DEMO_ACCESS_TOKEN` (local demo: `sale-demo-2026`)
    - `PEY_MODE=mock` para ensayo sin banco; `real` para $0.01
    - Si `real`: `PEY_API_KEY`, `PEY_WEBHOOK_SECRET`, `PEY_BANK_ACCOUNT_RESTAURANTE`, `PEY_BANK_ACCOUNT_MESERO`
 2. En la app, guarda el token de demo en la barra superior.
 3. En portal.pey.mx, webhook: `https://<tu-app>/api/webhooks/pey`
+
+## Ensayo local verificado
+
+`npm run dev` + cobrar Mesa 1 + Simular pago → cuenta `pagada`. OK el 14 nov 2026.
 
 ## Guion (mock)
 

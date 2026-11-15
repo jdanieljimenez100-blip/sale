@@ -9,6 +9,7 @@ const serverEnvSchema = z.object({
   PEY_WEBHOOK_SECRET: z.string().optional(),
   PEY_BANK_ACCOUNT_RESTAURANTE: z.string().optional(),
   DEMO_ACCESS_TOKEN: z.string().min(1),
+  SESSION_SECRET: z.string().min(32),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

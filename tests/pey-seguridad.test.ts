@@ -4,6 +4,7 @@ import test from "node:test";
 process.env.NEXT_PUBLIC_SUPABASE_URL ??= "https://example.supabase.co";
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= "anon-test";
 process.env.DEMO_ACCESS_TOKEN = "token-de-prueba";
+process.env.SESSION_SECRET ??= "test-session-secret-min-32-characters!";
 process.env.PEY_MODE = "mock";
 
 const { normalizarNumRef } = await import("../lib/pey/num-ref");

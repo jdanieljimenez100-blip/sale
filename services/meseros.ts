@@ -20,7 +20,7 @@ export async function listarMeserosPublicos(): Promise<MeseroPublico[]> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("meseros")
-    .select("id, nombre, pey_bank_account_id, negocio_id, created_at")
+    .select("*")
     .eq("negocio_id", NEGOCIO_DEMO)
     .order("nombre", { ascending: true });
   if (error) {

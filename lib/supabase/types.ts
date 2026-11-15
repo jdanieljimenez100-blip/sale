@@ -38,6 +38,11 @@ export type Database = {
           negocio_id: string;
           nombre: string;
           pey_bank_account_id: string | null;
+          rol: "mesero" | "admin";
+          pin_hash: string | null;
+          pin_intentos_fallidos: number;
+          pin_bloqueado_hasta: string | null;
+          activo: boolean;
           created_at: string;
         };
         Insert: {
@@ -45,6 +50,11 @@ export type Database = {
           negocio_id: string;
           nombre: string;
           pey_bank_account_id?: string | null;
+          rol?: "mesero" | "admin";
+          pin_hash?: string | null;
+          pin_intentos_fallidos?: number;
+          pin_bloqueado_hasta?: string | null;
+          activo?: boolean;
           created_at?: string;
         };
         Update: {
@@ -52,6 +62,11 @@ export type Database = {
           negocio_id?: string;
           nombre?: string;
           pey_bank_account_id?: string | null;
+          rol?: "mesero" | "admin";
+          pin_hash?: string | null;
+          pin_intentos_fallidos?: number;
+          pin_bloqueado_hasta?: string | null;
+          activo?: boolean;
           created_at?: string;
         };
         Relationships: [];

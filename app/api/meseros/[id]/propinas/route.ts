@@ -10,7 +10,7 @@ export async function GET(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    const sesion = requireSesion(request);
+    const sesion = await requireSesion(request);
     const { id } = await context.params;
     if (sesion.rol !== "admin" && sesion.meseroId !== id) {
       throw new HttpError("No tienes permiso", 403);

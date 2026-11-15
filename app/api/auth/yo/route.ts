@@ -5,7 +5,7 @@ import { obtenerSesionActual } from "@/services/auth";
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    const sesion = requireSesion(request);
+    const sesion = await requireSesion(request);
     const yo = await obtenerSesionActual(sesion.meseroId);
     if (!yo) {
       return NextResponse.json({ error: "Inicia sesión" }, { status: 401 });

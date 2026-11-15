@@ -15,7 +15,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    requireSesion(request);
+    await requireSesion(request);
     const json: unknown = await request.json();
     if (
       typeof json === "object" &&

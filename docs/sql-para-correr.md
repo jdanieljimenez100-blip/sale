@@ -67,6 +67,13 @@ Si ya lo corriste en remoto, no lo vuelvas a ejecutar.
 
 `supabase/migrations/20261116_bitacora.sql`
 
+## 11) Versión de sesión revocable
+
+`supabase/migrations/20261116_meseros_sesion_version.sql`
+
+Columna `meseros.sesion_version` (int not null default 0). Se incrementa al
+cambiar PIN, rol o activo; el token HMAC lleva `v` y debe coincidir.
+
 ## Verificación
 
 ```sql

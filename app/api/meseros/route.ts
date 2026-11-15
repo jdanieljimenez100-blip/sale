@@ -12,7 +12,7 @@ const crearSchema = z.object({
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    requireSesion(request);
+    await requireSesion(request);
     const meseros = await listarMeserosPublicos();
     return NextResponse.json({ meseros });
   } catch (error) {
@@ -22,7 +22,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    requireSesion(request, { rol: "admin" });
+    await requireSesion(request, { rol: "admin" });
     const json: unknown = await request.json();
     const input = crearSchema.parse(json);
     const mesero = await crearMesero({

@@ -10,7 +10,7 @@ export async function DELETE(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    const sesion = requireSesion(request);
+    const sesion = await requireSesion(request);
     const { id } = await context.params;
     const cuenta = await quitarPartida({ partidaId: id, sesion });
     return NextResponse.json({ cuenta });

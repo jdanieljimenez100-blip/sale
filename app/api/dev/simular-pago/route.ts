@@ -16,7 +16,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    requireSesion(request);
+    await requireSesion(request);
     const env = getServerEnv();
     if (env.PEY_MODE !== "mock") {
       return NextResponse.json(

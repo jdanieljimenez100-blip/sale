@@ -120,12 +120,14 @@ export async function actualizarMeseroAdmin(input: {
   }
 
   const update: Database["public"]["Tables"]["meseros"]["Update"] = {};
+  let invalidaSesion = false;
   if (input.pin !== undefined) {
     const rolParaPin = input.rol ?? actual.rol;
     validarPin(input.pin, rolParaPin);
     update.pin_hash = hashPin(input.pin);
     update.pin_intentos_fallidos = 0;
     update.pin_bloqueado_hasta = null;
+    invalidaSesion = true;
   }
   if (input.rol !== undefined && input.rol !== actual.rol) {
     if (actual.rol === "admin" && input.rol === "mesero") {
@@ -134,6 +136,7 @@ export async function actualizarMeseroAdmin(input: {
       }
     }
     update.rol = input.rol;
+    invalidaSesion = true;
   }
   if (input.activo !== undefined && input.activo !== actual.activo) {
     if (actual.rol === "admin" && input.activo === false) {
@@ -142,9 +145,13 @@ export async function actualizarMeseroAdmin(input: {
       }
     }
     update.activo = input.activo;
+    invalidaSesion = true;
   }
   if (input.peyBankAccountId !== undefined) {
     update.pey_bank_account_id = input.peyBankAccountId;
+  }
+  if (invalidaSesion) {
+    update.sesion_version = actual.sesion_version + 1;
   }
 
   const supabase = createServiceClient();

@@ -10,7 +10,7 @@ export async function GET(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    requireSesion(request);
+    await requireSesion(request);
     const { id } = await context.params;
     const cobro = await obtenerCobro(id);
     if (!cobro) {

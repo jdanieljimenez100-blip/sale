@@ -43,6 +43,7 @@ export type Database = {
           pin_intentos_fallidos: number;
           pin_bloqueado_hasta: string | null;
           activo: boolean;
+          sesion_version: number;
           created_at: string;
         };
         Insert: {
@@ -55,6 +56,7 @@ export type Database = {
           pin_intentos_fallidos?: number;
           pin_bloqueado_hasta?: string | null;
           activo?: boolean;
+          sesion_version?: number;
           created_at?: string;
         };
         Update: {
@@ -67,6 +69,7 @@ export type Database = {
           pin_intentos_fallidos?: number;
           pin_bloqueado_hasta?: string | null;
           activo?: boolean;
+          sesion_version?: number;
           created_at?: string;
         };
         Relationships: [];

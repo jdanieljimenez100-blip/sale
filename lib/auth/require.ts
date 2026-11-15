@@ -6,6 +6,7 @@ import {
   type PayloadSesion,
   type RolSesion,
 } from "@/lib/auth/sesion";
+import { createServiceClient } from "@/lib/supabase/server";
 
 function leerCookie(request: Request, nombre: string): string | null {
   const raw = request.headers.get("cookie");
@@ -33,7 +34,6 @@ export function assertOriginMismoHost(request: Request): void {
   }
   const origin = request.headers.get("origin");
   if (!origin) {
-    // Same-origin navigations / algunos clientes sin Origin en POST same-site.
     const referer = request.headers.get("referer");
     if (!referer) {
       throw new HttpError("Origen no permitido", 403);
@@ -61,10 +61,14 @@ export function assertOriginMismoHost(request: Request): void {
   }
 }
 
-export function requireSesion(
+/**
+ * Verifica cookie HMAC y que el mesero siga activo con la misma
+ * sesion_version. El rol efectivo sale de la BASE, no de la cookie.
+ */
+export async function requireSesion(
   request: Request,
   opts?: { rol?: RolSesion },
-): PayloadSesion {
+): Promise<PayloadSesion> {
   assertOriginMismoHost(request);
   const token = leerCookie(request, COOKIE_SESION);
   if (!token) {
@@ -75,8 +79,30 @@ export function requireSesion(
   if (!payload) {
     throw new HttpError("Inicia sesión", 401);
   }
-  if (opts?.rol === "admin" && payload.rol !== "admin") {
+
+  const supabase = createServiceClient();
+  const { data: mesero, error } = await supabase
+    .from("meseros")
+    .select("id, rol, activo, sesion_version")
+    .eq("id", payload.meseroId)
+    .maybeSingle();
+
+  if (error || !mesero || !mesero.activo) {
+    throw new HttpError("Inicia sesión", 401);
+  }
+  if (mesero.sesion_version !== payload.v) {
+    throw new HttpError("Inicia sesión", 401);
+  }
+
+  const efectiva: PayloadSesion = {
+    meseroId: mesero.id,
+    rol: mesero.rol,
+    exp: payload.exp,
+    v: mesero.sesion_version,
+  };
+
+  if (opts?.rol === "admin" && efectiva.rol !== "admin") {
     throw new HttpError("No tienes permiso", 403);
   }
-  return payload;
+  return efectiva;
 }

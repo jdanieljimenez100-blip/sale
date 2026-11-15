@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import test from "node:test";
 import {
   crearTokenSesion,
@@ -10,14 +11,14 @@ const SECRET = "x".repeat(32);
 
 void test("verificarTokenSesion acepta token fresco", () => {
   const ahora = 1_700_000_000_000;
-  const payload = payloadSesionNuevo("m1", "mesero", ahora);
+  const payload = payloadSesionNuevo("m1", "mesero", 0, ahora);
   const token = crearTokenSesion(payload, SECRET);
   const leido = verificarTokenSesion(token, SECRET, ahora + 1000);
   assert.deepEqual(leido, payload);
 });
 
 void test("verificarTokenSesion rechaza firma alterada", () => {
-  const payload = payloadSesionNuevo("m1", "admin");
+  const payload = payloadSesionNuevo("m1", "admin", 1);
   const token = crearTokenSesion(payload, SECRET);
   const malo = `${token.slice(0, -1)}${token.endsWith("a") ? "b" : "a"}`;
   assert.equal(verificarTokenSesion(malo, SECRET), null);
@@ -25,7 +26,7 @@ void test("verificarTokenSesion rechaza firma alterada", () => {
 
 void test("verificarTokenSesion rechaza expirada", () => {
   const ahora = 1_700_000_000_000;
-  const payload = payloadSesionNuevo("m1", "mesero", ahora);
+  const payload = payloadSesionNuevo("m1", "mesero", 0, ahora);
   const token = crearTokenSesion(payload, SECRET);
   assert.equal(
     verificarTokenSesion(token, SECRET, payload.exp + 1),
@@ -34,14 +35,28 @@ void test("verificarTokenSesion rechaza expirada", () => {
 });
 
 void test("verificarTokenSesion no confunde rol en payload alterado", () => {
-  const payload = payloadSesionNuevo("m1", "mesero");
+  const payload = payloadSesionNuevo("m1", "mesero", 2);
   const token = crearTokenSesion(payload, SECRET);
   const [payloadB64] = token.split(".");
   assert.ok(payloadB64);
   const json = JSON.parse(
     Buffer.from(payloadB64, "base64url").toString("utf8"),
-  ) as { meseroId: string; rol: string; exp: number };
+  ) as { meseroId: string; rol: string; exp: number; v: number };
   json.rol = "admin";
   const alterado = `${Buffer.from(JSON.stringify(json)).toString("base64url")}.${token.split(".")[1]}`;
   assert.equal(verificarTokenSesion(alterado, SECRET), null);
+});
+
+void test("verificarTokenSesion rechaza sin campo v", () => {
+  const payloadB64 = Buffer.from(
+    JSON.stringify({
+      meseroId: "m1",
+      rol: "mesero",
+      exp: Date.now() + 60_000,
+    }),
+  ).toString("base64url");
+  const firma = createHmac("sha256", SECRET)
+    .update(payloadB64)
+    .digest("base64url");
+  assert.equal(verificarTokenSesion(`${payloadB64}.${firma}`, SECRET), null);
 });

@@ -5,7 +5,7 @@ import { listarCuentasConResumen } from "@/services/cuentas";
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    requireSesion(request);
+    await requireSesion(request);
     const { cuentas, cerradasHoy, resumen } = await listarCuentasConResumen();
     return NextResponse.json({ cuentas, cerradasHoy, resumen });
   } catch (error) {

@@ -12,7 +12,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    const sesion = requireSesion(request);
+    const sesion = await requireSesion(request);
     const json: unknown = await request.json();
     const body = bodySchema.parse(json);
     const cuenta = await abrirMesa({

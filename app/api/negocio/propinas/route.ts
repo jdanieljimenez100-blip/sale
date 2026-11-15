@@ -14,7 +14,7 @@ const bodySchema = z.object({
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    requireSesion(request, { rol: "admin" });
+    await requireSesion(request, { rol: "admin" });
     const config = await obtenerConfigPropinasNegocio();
     return NextResponse.json(config);
   } catch (error) {
@@ -24,7 +24,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function PUT(request: Request): Promise<NextResponse> {
   try {
-    requireSesion(request, { rol: "admin" });
+    await requireSesion(request, { rol: "admin" });
     const json: unknown = await request.json();
     const body = bodySchema.parse(json);
     const config = await actualizarConfigPropinas({

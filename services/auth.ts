@@ -14,7 +14,12 @@ const MENSAJE_PIN = "PIN incorrecto";
 export async function loginConPin(input: {
   meseroId: string;
   pin: string;
-}): Promise<{ meseroId: string; rol: RolSesion; nombre: string }> {
+}): Promise<{
+  meseroId: string;
+  rol: RolSesion;
+  nombre: string;
+  sesionVersion: number;
+}> {
   const supabase = createServiceClient();
   const { data: mesero, error } = await supabase
     .from("meseros")
@@ -64,6 +69,7 @@ export async function loginConPin(input: {
     meseroId: mesero.id,
     rol: mesero.rol,
     nombre: mesero.nombre,
+    sesionVersion: mesero.sesion_version,
   };
 }
 

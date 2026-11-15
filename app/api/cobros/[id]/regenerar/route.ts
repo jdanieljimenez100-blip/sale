@@ -10,7 +10,7 @@ export async function POST(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    requireSesion(request);
+    await requireSesion(request);
     const { id } = await context.params;
     const cobro = await regenerarCobro(id);
     return NextResponse.json({ cobro });

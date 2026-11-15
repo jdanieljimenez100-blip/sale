@@ -20,7 +20,7 @@ export async function PATCH(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    requireSesion(request, { rol: "admin" });
+    await requireSesion(request, { rol: "admin" });
     const { id } = await context.params;
     uuidSchema.parse(id);
     const json: unknown = await request.json();

@@ -25,7 +25,7 @@ export async function POST(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    requireSesion(request);
+    await requireSesion(request);
     const { id } = await context.params;
     const json: unknown = await request.json();
     const input = bodySchema.parse(json);

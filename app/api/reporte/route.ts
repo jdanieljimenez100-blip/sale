@@ -9,7 +9,7 @@ const rangoSchema = z.enum(["1", "7", "30"]);
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    const sesion = requireSesion(request);
+    const sesion = await requireSesion(request);
     const url = new URL(request.url);
     const raw = url.searchParams.get("dias") ?? "1";
     const dias = Number(rangoSchema.parse(raw)) as RangoReporteDias;

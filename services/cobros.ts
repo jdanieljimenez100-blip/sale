@@ -18,6 +18,7 @@ export type CrearCobroAppInput = {
   montoCentavos: number;
   concepto: string;
   bankAccountId?: string;
+  cobroOrigenId?: string;
   /** Texto del que se toman los dígitos para numRef de pey (p. ej. la mesa). */
   numRef?: string;
 };
@@ -59,6 +60,7 @@ export async function crearCobroApp(
     p_pey_qr_id: creado.peyQrId,
     p_qr_string: creado.qrString,
     p_concepto: input.concepto,
+    p_cobro_origen_id: input.cobroOrigenId ?? null,
   });
 
   if (error || !data) {

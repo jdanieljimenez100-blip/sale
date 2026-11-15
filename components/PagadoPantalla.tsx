@@ -4,19 +4,21 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactElement } from "react";
 import { apiFetch } from "@/lib/client-api";
 import { formatearMxn, pesosTextoACentavos } from "@/lib/money";
+import { calcularMontoPropinaPorcentaje } from "@/lib/propina";
 import type { Database } from "@/lib/supabase/types";
 
 type Cobro = Database["public"]["Tables"]["cobros"]["Row"];
 type CobroResponse = { cobro: Cobro };
-type CrearResponse = { cobro: Cobro };
 type PropinaInfo = {
   mensaje: string;
   meseroNombre: string;
   mesa: string | null;
   tieneCuentaMesero: boolean;
+  porcentajes: number[];
 };
-
-const PCTS = [10, 15, 20] as const;
+type PropinaResponse =
+  | { ok: true; omitida: true }
+  | { cobro: Cobro; yaExistia: boolean };
 
 export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
   const router = useRouter();
@@ -25,6 +27,7 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [otra, setOtra] = useState("");
   const [busy, setBusy] = useState(false);
+  const [paso, setPaso] = useState<"propina" | "despues">("propina");
 
   useEffect(() => {
     void (async () => {
@@ -43,25 +46,25 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
     })();
   }, [cobroId]);
 
-  async function crearPropina(montoCentavos: number): Promise<void> {
-    if (!cobro || !propinaInfo) {
-      return;
-    }
+  async function enviarPropina(
+    body: { porcentaje: number } | { montoCentavos: number } | { ninguna: true },
+  ): Promise<void> {
     setBusy(true);
     setError(null);
     try {
-      const mesa = propinaInfo.mesa ?? "?";
-      const data = await apiFetch<CrearResponse>("/api/cobros", {
-        method: "POST",
-        withDemoToken: true,
-        body: JSON.stringify({
-          cuentaId: cobro.cuenta_id ?? undefined,
-          meseroId: cobro.mesero_id ?? undefined,
-          tipo: "propina",
-          montoCentavos,
-          concepto: `Propina · Mesa ${mesa} · ${propinaInfo.meseroNombre}`,
-        }),
-      });
+      const data = await apiFetch<PropinaResponse>(
+        `/api/cobros/${cobroId}/propina`,
+        {
+          method: "POST",
+          withDemoToken: true,
+          body: JSON.stringify(body),
+        },
+      );
+      if ("omitida" in data) {
+        setPaso("despues");
+        setBusy(false);
+        return;
+      }
       router.push(`/cobros/${data.cobro.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo crear propina");
@@ -94,6 +97,8 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
     );
   }
 
+  const porcentajes = propinaInfo?.porcentajes ?? [10, 15, 20];
+
   return (
     <div className="flex flex-col gap-6 text-center">
       <div className="rounded-3xl bg-emerald-600 px-6 py-16 text-white shadow-lg">
@@ -102,68 +107,78 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
         <p className="mt-4 text-2xl">{formatearMxn(cobro.monto_centavos)}</p>
       </div>
 
-      <section className="rounded-2xl bg-white/90 p-4 text-left">
-        <h2 className="text-xl font-semibold">¿Propina para el mesero?</h2>
-        {propinaInfo ? (
-          <p className="mt-1 text-sm text-neutral-700">{propinaInfo.mensaje}</p>
-        ) : null}
-        <div className="mt-4 grid grid-cols-1 gap-2">
-          {PCTS.map((pct) => {
-            const monto = Math.max(
-              1,
-              Math.round((cobro.monto_centavos * pct) / 100),
-            );
-            return (
-              <button
-                key={pct}
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  void crearPropina(monto);
-                }}
-                className="min-h-14 rounded-xl bg-emerald-800 text-base font-semibold text-white disabled:opacity-50"
-              >
-                {pct}% · {formatearMxn(monto)}
-              </button>
-            );
-          })}
-        </div>
-        <label className="mt-4 flex flex-col gap-1 text-sm">
-          Otra cantidad (pesos)
-          <input
-            className="min-h-12 rounded-xl border px-3"
-            value={otra}
-            onChange={(event) => setOtra(event.target.value)}
-            inputMode="decimal"
-            placeholder="12.50"
-          />
-        </label>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => {
-            try {
-              const monto = pesosTextoACentavos(otra);
-              if (monto > 0) {
-                void crearPropina(monto);
+      {paso === "propina" ? (
+        <section className="rounded-2xl bg-white/90 p-4 text-left">
+          <h2 className="text-xl font-semibold">¿Propina para el mesero?</h2>
+          {propinaInfo ? (
+            <p className="mt-1 text-sm text-neutral-700">{propinaInfo.mensaje}</p>
+          ) : null}
+          <div className="mt-4 grid grid-cols-1 gap-2">
+            {porcentajes.map((pct) => {
+              const monto = calcularMontoPropinaPorcentaje(
+                cobro.monto_centavos,
+                pct,
+              );
+              return (
+                <button
+                  key={pct}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    void enviarPropina({ porcentaje: pct });
+                  }}
+                  className="min-h-14 rounded-xl bg-emerald-800 text-base font-semibold text-white disabled:opacity-50"
+                >
+                  {pct}% · {formatearMxn(monto)}
+                </button>
+              );
+            })}
+          </div>
+          <label className="mt-4 flex flex-col gap-1 text-sm">
+            Otra cantidad (pesos)
+            <input
+              className="min-h-12 rounded-xl border px-3"
+              value={otra}
+              onChange={(event) => setOtra(event.target.value)}
+              inputMode="decimal"
+              placeholder="12.50"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              try {
+                const monto = pesosTextoACentavos(otra);
+                void enviarPropina({ montoCentavos: monto });
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Monto inválido");
               }
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Monto inválido");
-            }
-          }}
-          className="mt-2 min-h-14 w-full rounded-xl bg-neutral-900 font-semibold text-white disabled:opacity-50"
-        >
-          Cobrar otra cantidad
-        </button>
+            }}
+            className="mt-2 min-h-14 w-full rounded-xl bg-neutral-900 font-semibold text-white disabled:opacity-50"
+          >
+            Cobrar otra cantidad
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              void enviarPropina({ ninguna: true });
+            }}
+            className="mt-3 min-h-14 w-full rounded-xl border border-neutral-400 font-semibold"
+          >
+            Sin propina
+          </button>
+        </section>
+      ) : (
         <button
           type="button"
-          disabled={busy}
           onClick={() => router.push("/cuentas")}
-          className="mt-3 min-h-14 w-full rounded-xl border border-neutral-400 font-semibold"
+          className="min-h-14 rounded-2xl bg-neutral-900 text-lg font-semibold text-white"
         >
-          Sin propina
+          Volver a Mesas
         </button>
-      </section>
+      )}
 
       {error ? <p className="text-red-700">{error}</p> : null}
     </div>

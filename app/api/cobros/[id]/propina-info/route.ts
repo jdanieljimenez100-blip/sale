@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-error";
+import { PROPINA_PORCENTAJES_DEFAULT } from "@/lib/propina";
 import { obtenerCobro } from "@/services/cobros";
 import { resolverDestinoPropina } from "@/services/propina-destino";
 
@@ -24,6 +25,7 @@ export async function GET(
       meseroNombre: destino.meseroNombre,
       mesa: destino.mesa,
       tieneCuentaMesero: destino.tieneCuentaMesero,
+      porcentajes: [...PROPINA_PORCENTAJES_DEFAULT],
     });
   } catch (error) {
     return jsonError(error);

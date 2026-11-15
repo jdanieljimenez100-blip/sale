@@ -6,17 +6,26 @@ import { useCallback, useEffect, useRef, useState, type ReactElement } from "rea
 import { QrImage } from "@/components/QrImage";
 import { apiFetch } from "@/lib/client-api";
 import { formatearMxn } from "@/lib/money";
+import { beep, instalarUnlockAudio } from "@/lib/sonido";
 import type { Database } from "@/lib/supabase/types";
 
 type Cobro = Database["public"]["Tables"]["cobros"]["Row"];
 type CobroResponse = { cobro: Cobro };
 
-export function CobroPantalla({ cobroId }: { cobroId: string }): ReactElement {
+export function CobroPantalla({
+  cobroId,
+  permitirSimular,
+}: {
+  cobroId: string;
+  permitirSimular: boolean;
+}): ReactElement {
   const router = useRouter();
   const [cobro, setCobro] = useState<Cobro | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const redirected = useRef(false);
+
+  useEffect(() => instalarUnlockAudio(), []);
 
   const cargar = useCallback(async (): Promise<void> => {
     try {
@@ -25,6 +34,7 @@ export function CobroPantalla({ cobroId }: { cobroId: string }): ReactElement {
       setError(null);
       if (data.cobro.estado === "pagado" && !redirected.current) {
         redirected.current = true;
+        beep();
         router.push(`/cobros/${cobroId}/pagado`);
       }
     } catch (err) {
@@ -76,19 +86,22 @@ export function CobroPantalla({ cobroId }: { cobroId: string }): ReactElement {
       </div>
       <QrImage value={cobro.qr_string} label={`QR ${cobro.concepto}`} />
       <p className="text-sm text-neutral-600">
-        Esperando pago… el estado solo cambia con el webhook.
+        Esperando pago… el estado solo cambia con el webhook. Toca la pantalla
+        una vez para activar el sonido.
       </p>
       {error ? <p className="text-red-700">{error}</p> : null}
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => {
-          void simularPago();
-        }}
-        className="min-h-14 rounded-2xl border border-dashed border-neutral-400 px-4 text-base font-semibold disabled:opacity-50"
-      >
-        Simular pago (solo mock)
-      </button>
+      {permitirSimular ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            void simularPago();
+          }}
+          className="min-h-14 rounded-2xl border border-dashed border-neutral-400 px-4 text-base font-semibold disabled:opacity-50"
+        >
+          Simular pago (solo mock)
+        </button>
+      ) : null}
       {cobro.cuenta_id ? (
         <Link href={`/cuentas/${cobro.cuenta_id}`} className="underline">
           Volver a la cuenta

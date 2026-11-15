@@ -27,24 +27,6 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
         setError(err instanceof Error ? err.message : "Error");
       }
     })();
-
-    try {
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 880;
-      gain.gain.value = 0.05;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      window.setTimeout(() => {
-        osc.stop();
-        void ctx.close();
-      }, 350);
-    } catch {
-      // Sin audio no bloquea la demo.
-    }
   }, [cobroId]);
 
   async function crearPropina(montoCentavos: number): Promise<void> {

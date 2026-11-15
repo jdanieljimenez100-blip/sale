@@ -6,9 +6,11 @@ export default function PropinasPage(): ReactElement {
   return (
     <MeseroChrome>
       <header>
-        <h1 className="text-3xl font-semibold">Mis propinas — Hoy</h1>
-        <p className="mt-2 text-neutral-700">
-          Del mesero elegido en Atiende. Solo hoy (hora CDMX).
+        <h1 className="text-[32px] font-semibold text-tinta text-pretty">
+          Mis propinas — Hoy
+        </h1>
+        <p className="mt-1 text-[15px] text-tinta-suave">
+          Del mesero en sesión. Solo hoy (hora CDMX).
         </p>
       </header>
       <PropinasLista />

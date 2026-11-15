@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent, type ReactElement } from "react";
+import { Boton } from "@/components/ui/Boton";
 import { apiFetch } from "@/lib/client-api";
 
 type Config = {
@@ -60,43 +61,49 @@ export function PropinasAjustes(): ReactElement {
   }
 
   return (
-    <section className="rounded-2xl bg-white/90 p-4">
-      <h2 className="mb-2 text-lg font-semibold">Propinas</h2>
-      <p className="mb-3 text-sm text-neutral-600">
+    <section className="rounded-hoja border border-linea bg-superficie p-4">
+      <h2 className="mb-2 text-[17px] font-semibold text-tinta">Propinas</h2>
+      <p className="mb-3 text-[15px] text-tinta-suave">
         Porcentajes que ve el comensal al pagar. Separados por coma (1 a 3).
       </p>
       <form onSubmit={(e) => void onSubmit(e)} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-[15px] text-tinta">
           Porcentajes sugeridos
           <input
-            className="min-h-12 rounded-xl border px-3"
+            name="porcentajes"
+            autoComplete="off"
+            className="min-h-12 rounded-boton border border-linea px-3"
             value={porcentajesTexto}
             onChange={(event) => setPorcentajesTexto(event.target.value)}
-            placeholder="10,15,20"
+            placeholder="10,15,20…"
             inputMode="numeric"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-[15px] text-tinta">
           % de propinas para cocina (solo informativo)
           <input
-            className="min-h-12 rounded-xl border px-3"
+            name="cocina"
+            autoComplete="off"
+            className="min-h-12 rounded-boton border border-linea px-3"
             value={cocina}
             onChange={(event) => setCocina(event.target.value)}
             inputMode="numeric"
           />
         </label>
-        <button
-          type="submit"
-          disabled={busy}
-          className="min-h-12 rounded-xl bg-emerald-800 font-semibold text-white disabled:opacity-50"
-        >
+        <Boton type="submit" disabled={busy}>
           Guardar
-        </button>
+        </Boton>
       </form>
       {ok ? (
-        <p className="mt-2 text-sm text-emerald-800">Guardado.</p>
+        <p className="mt-2 text-[15px] text-pagada-fg" role="status">
+          Guardado.
+        </p>
       ) : null}
-      {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
+      {error ? (
+        <p className="mt-2 text-[15px] text-peligro" role="alert">
+          {error}
+        </p>
+      ) : null}
     </section>
   );
 }

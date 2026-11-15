@@ -7,6 +7,8 @@ import {
   type FormEvent,
   type ReactElement,
 } from "react";
+import { Boton } from "@/components/ui/Boton";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { apiFetch } from "@/lib/client-api";
 import type { MeseroPublico } from "@/lib/meseros-types";
 
@@ -17,6 +19,7 @@ export function EquipoPantalla(): ReactElement {
   const [nombre, setNombre] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const cargar = useCallback(async (): Promise<void> => {
     try {
@@ -25,6 +28,8 @@ export function EquipoPantalla(): ReactElement {
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -69,15 +74,24 @@ export function EquipoPantalla(): ReactElement {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-3" aria-busy="true">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <ul className="flex flex-col gap-3">
+      <ul className="divide-y divide-linea rounded-hoja border border-linea bg-superficie">
         {meseros.map((m) => (
-          <li key={m.id} className="rounded-2xl bg-white/90 p-4">
+          <li key={m.id} className="p-4">
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-medium">{m.nombre}</span>
-                <span className="text-sm text-neutral-600">
+                <span className="font-medium text-tinta">{m.nombre}</span>
+                <span className="text-[13px] text-tinta-suave">
                   {m.rol} · {m.activo ? "activo" : "inactivo"}
                   {m.tienePin ? " · PIN" : " · sin PIN"}
                 </span>
@@ -86,7 +100,7 @@ export function EquipoPantalla(): ReactElement {
                 <button
                   type="button"
                   disabled={busy}
-                  className="min-h-10 rounded-xl border px-3 text-sm"
+                  className="pressable min-h-12 rounded-boton border border-linea px-3 text-[15px] text-tinta focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
                   onClick={() => {
                     const pin = window.prompt(
                       m.rol === "admin"
@@ -103,7 +117,7 @@ export function EquipoPantalla(): ReactElement {
                 <button
                   type="button"
                   disabled={busy}
-                  className="min-h-10 rounded-xl border px-3 text-sm"
+                  className="pressable min-h-12 rounded-boton border border-linea px-3 text-[15px] text-tinta focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
                   onClick={() => {
                     void patch(m.id, {
                       rol: m.rol === "admin" ? "mesero" : "admin",
@@ -115,7 +129,7 @@ export function EquipoPantalla(): ReactElement {
                 <button
                   type="button"
                   disabled={busy}
-                  className="min-h-10 rounded-xl border px-3 text-sm"
+                  className="pressable min-h-12 rounded-boton border border-linea px-3 text-[15px] text-tinta focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
                   onClick={() => {
                     void patch(m.id, { activo: !m.activo });
                   }}
@@ -125,7 +139,7 @@ export function EquipoPantalla(): ReactElement {
                 <button
                   type="button"
                   disabled={busy}
-                  className="min-h-10 rounded-xl border px-3 text-sm"
+                  className="pressable min-h-12 rounded-boton border border-linea px-3 text-[15px] text-tinta focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
                   onClick={() => {
                     const ulid = window.prompt("ULID pey (vacío para quitar)");
                     if (ulid === null) {
@@ -146,26 +160,31 @@ export function EquipoPantalla(): ReactElement {
 
       <form
         onSubmit={(e) => void onSubmit(e)}
-        className="flex flex-col gap-3 rounded-2xl bg-white/90 p-4"
+        className="flex flex-col gap-3 rounded-hoja border border-linea bg-superficie p-4"
       >
-        <h2 className="text-lg font-semibold">Agregar mesero</h2>
-        <input
-          className="min-h-12 rounded-xl border px-3"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-          maxLength={80}
-          placeholder="Nombre"
-        />
-        <button
-          type="submit"
-          disabled={busy}
-          className="min-h-14 rounded-2xl bg-emerald-800 font-semibold text-white disabled:opacity-50"
-        >
+        <h2 className="text-[17px] font-semibold text-tinta">Agregar mesero</h2>
+        <label className="flex flex-col gap-1 text-[15px] text-tinta">
+          Nombre
+          <input
+            name="nombre"
+            autoComplete="off"
+            className="min-h-12 rounded-boton border border-linea px-3"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            required
+            maxLength={80}
+            placeholder="Nombre…"
+          />
+        </label>
+        <Boton type="submit" tamano="lg" disabled={busy}>
           Guardar mesero
-        </button>
+        </Boton>
       </form>
-      {error ? <p className="text-red-700">{error}</p> : null}
+      {error ? (
+        <p className="text-peligro" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

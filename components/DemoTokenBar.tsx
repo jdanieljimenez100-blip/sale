@@ -25,25 +25,30 @@ export function DemoTokenBar(): ReactElement {
   return (
     <form
       onSubmit={onSubmit}
-      className="flex flex-col gap-2 rounded-2xl bg-white/80 p-3 text-sm sm:flex-row sm:items-end"
+      className="flex flex-col gap-2 rounded-hoja border border-linea bg-superficie p-3 text-[15px] sm:flex-row sm:items-end"
     >
-      <label className="flex flex-1 flex-col gap-1">
+      <label className="flex flex-1 flex-col gap-1 text-tinta">
         <span>Token de este dispositivo</span>
         <input
-          className="min-h-12 rounded-xl border border-neutral-300 px-3"
+          className="min-h-12 rounded-boton border border-linea px-3"
           value={token}
           onChange={(event) => setToken(event.target.value)}
           autoComplete="off"
+          spellCheck={false}
           name={DEMO_TOKEN_STORAGE_KEY}
         />
       </label>
       <button
         type="submit"
-        className="min-h-12 rounded-xl bg-neutral-900 px-4 font-semibold text-white"
+        className="pressable min-h-12 rounded-boton bg-primario px-4 font-semibold text-primario-tinta"
       >
         Guardar
       </button>
-      {saved ? <p className="text-emerald-700">Listo</p> : null}
+      {saved ? (
+        <p className="text-pagada-fg" role="status">
+          Listo
+        </p>
+      ) : null}
     </form>
   );
 }

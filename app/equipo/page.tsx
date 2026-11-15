@@ -9,14 +9,18 @@ export default function EquipoPage(): ReactElement {
   return (
     <MeseroChrome rol="admin">
       <header>
-        <p className="text-sm uppercase tracking-[0.2em] text-emerald-800">Sale</p>
-        <h1 className="mt-2 text-3xl font-semibold">Equipo</h1>
-        <p className="mt-2 text-neutral-700">
+        <h1 className="text-[32px] font-semibold text-tinta text-pretty">
+          Equipo
+        </h1>
+        <p className="mt-1 text-[15px] text-tinta-suave">
           Meseros del negocio. El ID de cuenta pey solo vive en el servidor.
         </p>
       </header>
       <EquipoPantalla />
-      <Link href="/ajustes" className="underline">
+      <Link
+        href="/ajustes"
+        className="min-h-12 text-[15px] font-semibold text-primario underline underline-offset-2"
+      >
         Ajustes
       </Link>
     </MeseroChrome>

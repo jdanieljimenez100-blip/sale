@@ -7,18 +7,28 @@ export default function AjustesPage(): ReactElement {
   return (
     <MeseroChrome rol="admin">
       <header>
-        <p className="text-sm uppercase tracking-[0.2em] text-emerald-800">Sale</p>
-        <h1 className="mt-2 text-3xl font-semibold">Ajustes</h1>
-        <p className="mt-2 text-neutral-700">Solo administración</p>
+        <h1 className="text-[32px] font-semibold text-tinta text-pretty">
+          Ajustes
+        </h1>
+        <p className="mt-1 text-[15px] text-tinta-suave">Solo administración</p>
       </header>
       <PropinasAjustes />
-      <Link href="/ajustes/menu" className="min-h-12 text-emerald-900 underline">
+      <Link
+        href="/ajustes/menu"
+        className="flex min-h-12 items-center text-[15px] font-semibold text-primario underline underline-offset-2"
+      >
         Menú
       </Link>
-      <Link href="/equipo" className="min-h-12 text-emerald-900 underline">
+      <Link
+        href="/equipo"
+        className="flex min-h-12 items-center text-[15px] font-semibold text-primario underline underline-offset-2"
+      >
         Equipo (meseros)
       </Link>
-      <Link href="/cuentas" className="min-h-12 text-neutral-700 underline">
+      <Link
+        href="/cuentas"
+        className="flex min-h-12 items-center text-[15px] text-tinta-suave underline underline-offset-2"
+      >
         Volver a mesas
       </Link>
     </MeseroChrome>

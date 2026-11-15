@@ -4,8 +4,8 @@
   "description": "Punto de venta con cobro CoDi",
   "start_url": "/cuentas",
   "display": "standalone",
-  "background_color": "#f3efe6",
-  "theme_color": "#0f6b4c",
+  "background_color": "#EDEFEA",
+  "theme_color": "#1D3C8F",
   "lang": "es-MX",
   "icons": [
     {

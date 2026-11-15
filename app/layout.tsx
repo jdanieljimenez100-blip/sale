@@ -1,7 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import { Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import type { ReactNode } from "react";
 import { AudioUnlock } from "@/components/AudioUnlock";
 import "./globals.css";
+
+const barlow = Barlow({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-barlow",
+  display: "swap",
+});
+
+const barlowSemi = Barlow_Semi_Condensed({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-barlow-semi",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Sale — Cobro CoDi",
@@ -14,7 +29,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f6b4c",
+  themeColor: "#1D3C8F",
   width: "device-width",
   initialScale: 1,
 };
@@ -25,8 +40,8 @@ export default function RootLayout({
   children: ReactNode;
 }>): ReactNode {
   return (
-    <html lang="es-MX">
-      <body className="min-h-dvh antialiased">
+    <html lang="es-MX" className={`${barlow.variable} ${barlowSemi.variable}`}>
+      <body className="min-h-dvh bg-fondo font-sans text-tinta antialiased">
         <AudioUnlock />
         {children}
       </body>

@@ -6,6 +6,7 @@ alwaysApply: true
 # Flujo
 
 - Antes de programar, lee `docs/specs/spec.md` y `docs/specs/plan.md`. Si no están, no inventes alcance.
+- Si la tarea es UI, lee también `docs/specs/ui-plan.md` y `.cursor/rules/06-ui-sistema.mdc`. Una fase por turno.
 - Toma una tarea de `docs/specs/tasks.md`. Orden: datos, servicios, API, pantallas.
 - Un cambio pequeño por vez. No mezcles la configuración del agente con el código de la app.
 - Al terminar, ejecuta `npm run check` (lint, typecheck y test). Si el script no existe o falla, dilo. No lo declares pasado.

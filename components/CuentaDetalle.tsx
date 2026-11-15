@@ -12,8 +12,12 @@ import {
 } from "react";
 import { useSesion } from "@/components/SesionContext";
 import { EstadoBadge } from "@/components/EstadoBadge";
+import { Boton } from "@/components/ui/Boton";
+import { Hoja } from "@/components/ui/Hoja";
+import { Monto } from "@/components/ui/Monto";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { apiFetch } from "@/lib/client-api";
-import { etiquetaEstadoCobro, formatearMxn } from "@/lib/money";
+import { etiquetaEstadoCobro } from "@/lib/money";
 import type { CobroRow, CuentaConDetalle } from "@/services/cuentas";
 import type { Database } from "@/lib/supabase/types";
 
@@ -43,6 +47,7 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [categoria, setCategoria] = useState<string>("");
+  const [hojaMenu, setHojaMenu] = useState(false);
   const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
   const [qty, setQty] = useState(1);
   const [notas, setNotas] = useState("");
@@ -51,6 +56,9 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
   const [cant, setCant] = useState("1");
   const [precio, setPrecio] = useState("");
   const [notasOtro, setNotasOtro] = useState("");
+  const [confirmarQuitarId, setConfirmarQuitarId] = useState<string | null>(
+    null,
+  );
 
   const cargar = useCallback(async (): Promise<void> => {
     try {
@@ -79,6 +87,14 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     }, 2000);
     return () => window.clearInterval(timer);
   }, [cargar, cargarMenu]);
+
+  useEffect(() => {
+    if (!confirmarQuitarId) {
+      return;
+    }
+    const t = window.setTimeout(() => setConfirmarQuitarId(null), 3000);
+    return () => window.clearTimeout(t);
+  }, [confirmarQuitarId]);
 
   const categorias = useMemo(() => {
     const set = new Set(menu.map((i) => i.categoria));
@@ -140,6 +156,7 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
       );
       setCuenta(data.cuenta);
       setSheetItem(null);
+      setHojaMenu(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo agregar");
     } finally {
@@ -170,6 +187,7 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
       setPrecio("");
       setNotasOtro("");
       setMostrarOtro(false);
+      setHojaMenu(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo agregar");
     } finally {
@@ -177,12 +195,10 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     }
   }
 
-  async function quitar(partidaId: string): Promise<void> {
-    if (!window.confirm("¿Quitar esta partida?")) {
-      return;
-    }
+  async function quitarConfirmado(partidaId: string): Promise<void> {
     setBusy(true);
     setError(null);
+    setConfirmarQuitarId(null);
     try {
       await apiFetch(`/api/partidas/${partidaId}`, { method: "DELETE" });
       await cargar();
@@ -191,6 +207,14 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     } finally {
       setBusy(false);
     }
+  }
+
+  function onQuitarToque(partidaId: string): void {
+    if (confirmarQuitarId === partidaId) {
+      void quitarConfirmado(partidaId);
+      return;
+    }
+    setConfirmarQuitarId(partidaId);
   }
 
   async function cerrar(): Promise<void> {
@@ -206,10 +230,20 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
   }
 
   if (error && !cuenta) {
-    return <p className="rounded-2xl bg-red-100 p-4 text-red-800">{error}</p>;
+    return (
+      <p className="rounded-hoja bg-peligro/10 p-4 text-peligro" role="alert">
+        {error}
+      </p>
+    );
   }
   if (!cuenta) {
-    return <p className="rounded-2xl bg-white/70 p-4">Cargando mesa…</p>;
+    return (
+      <div className="flex flex-col gap-3" aria-busy="true">
+        <Skeleton className="h-10 w-40" />
+        <Skeleton className="h-14 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
   }
 
   const restante = cuenta.total_centavos - cuenta.pagado_consumo_centavos;
@@ -223,207 +257,146 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
   const editable = cuenta.estado !== "pagada" && !cuenta.cerrada_at;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4 pb-24">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-semibold">Mesa {cuenta.mesa}</h1>
-          <p className="mt-1 text-neutral-700">{cuenta.mesero_nombre}</p>
+        <div className="min-w-0">
+          <h1 className="font-mesa text-[32px] font-bold leading-none text-tinta">
+            Mesa {cuenta.mesa}
+          </h1>
+          {cuenta.estado === "pagada" ? (
+            <p className="mt-2 text-[15px] text-tinta-suave">
+              de <Monto centavos={cuenta.total_centavos} /> ·{" "}
+              {cuenta.mesero_nombre}
+            </p>
+          ) : (
+            <>
+              <p className="mt-2 font-mesa text-[48px] font-bold leading-none tabular text-tinta">
+                Falta <Monto centavos={restante} />
+              </p>
+              <p className="mt-1 text-[15px] text-tinta-suave">
+                de <Monto centavos={cuenta.total_centavos} /> ·{" "}
+                {cuenta.mesero_nombre}
+              </p>
+            </>
+          )}
         </div>
         <EstadoBadge estado={cuenta.estado} />
       </div>
 
       {cuenta.estado === "pagada" ? (
-        <div className="rounded-3xl bg-emerald-700 px-5 py-8 text-center text-white">
-          <p className="text-3xl font-bold">Mesa pagada ✓</p>
-          {propinas.length > 0 ? (
-            <ul className="mt-4 space-y-1 text-left text-sm">
-              {propinas.map((p) => (
-                <li key={p.id}>
-                  {p.concepto}: {formatearMxn(p.monto_centavos)}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-emerald-50">Sin propinas registradas.</p>
-          )}
-        </div>
-      ) : (
-        <p className="text-4xl font-bold tracking-tight tabular-nums">
-          Falta por cobrar {formatearMxn(restante)}
-        </p>
-      )}
-
-      {editable ? (
-        <section className="rounded-2xl bg-white/90 p-4">
-          <h2 className="mb-3 text-lg font-semibold">Menú</h2>
-          {categorias.length === 0 ? (
-            <p className="text-sm text-neutral-600">
-              Aún no hay platillos activos.
-            </p>
-          ) : (
-            <>
-              <div className="mb-3 flex flex-wrap gap-2" role="tablist">
-                {categorias.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    role="tab"
-                    aria-selected={categoria === cat}
-                    onClick={() => setCategoria(cat)}
-                    className={`min-h-12 rounded-xl px-4 font-semibold ${
-                      categoria === cat
-                        ? "bg-neutral-900 text-white"
-                        : "border border-neutral-300 text-neutral-800"
-                    }`}
-                  >
-                    {cat}
-                  </button>
+        <div className="flex items-center gap-3 rounded-hoja bg-pagada-bg px-4 py-3 text-pagada-fg">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+            <path
+              d="M7 12.5 10.5 16 17 8"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <div className="min-w-0">
+            <p className="font-semibold">Mesa pagada</p>
+            {propinas.length > 0 ? (
+              <ul className="mt-1 space-y-0.5 text-[13px]">
+                {propinas.map((p) => (
+                  <li key={p.id}>
+                    {p.concepto}: <Monto centavos={p.monto_centavos} />
+                  </li>
                 ))}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {itemsCategoria.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => abrirSheet(item)}
-                    className="flex min-h-12 flex-col items-start justify-center rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 text-left disabled:opacity-50"
-                  >
-                    <span className="font-semibold leading-tight">
-                      {item.nombre}
-                    </span>
-                    <span className="mt-1 text-sm tabular-nums text-neutral-700">
-                      {formatearMxn(item.precio_centavos)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          {esAdmin ? (
-            mostrarOtro ? (
-              <form
-                onSubmit={(e) => void agregarOtro(e)}
-                className="mt-4 flex flex-col gap-2 border-t pt-3"
-              >
-                <p className="text-sm font-medium">Otro (libre)</p>
-                <input
-                  className="min-h-12 rounded-xl border px-3"
-                  placeholder="Descripción"
-                  value={desc}
-                  onChange={(e) => setDesc(e.target.value)}
-                  required
-                  maxLength={80}
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    className="min-h-12 rounded-xl border px-3"
-                    placeholder="Cantidad"
-                    value={cant}
-                    onChange={(e) => setCant(e.target.value)}
-                    inputMode="numeric"
-                    required
-                  />
-                  <input
-                    className="min-h-12 rounded-xl border px-3"
-                    placeholder="Precio pesos"
-                    value={precio}
-                    onChange={(e) => setPrecio(e.target.value)}
-                    inputMode="decimal"
-                    required
-                  />
-                </div>
-                <input
-                  className="min-h-12 rounded-xl border px-3"
-                  placeholder="Notas (opcional)"
-                  value={notasOtro}
-                  onChange={(e) => setNotasOtro(e.target.value)}
-                  maxLength={120}
-                />
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="min-h-12 rounded-xl bg-neutral-900 font-semibold text-white"
-                >
-                  Guardar partida
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMostrarOtro(false)}
-                  className="min-h-12 text-sm underline"
-                >
-                  Cancelar
-                </button>
-              </form>
+              </ul>
             ) : (
-              <button
-                type="button"
-                onClick={() => setMostrarOtro(true)}
-                className="mt-3 min-h-12 w-full rounded-xl border font-semibold"
-              >
-                Otro
-              </button>
-            )
-          ) : null}
-        </section>
+              <p className="text-[13px]">Sin propinas registradas.</p>
+            )}
+          </div>
+        </div>
       ) : null}
 
-      <section className="rounded-2xl bg-white/90 p-4">
-        <h2 className="mb-3 text-lg font-semibold">Partidas</h2>
-        <ul className="flex flex-col gap-2">
-          {cuenta.partidas.map((partida) => (
-            <li
-              key={partida.id}
-              className="flex items-center justify-between gap-3 text-sm"
+      <section className="rounded-hoja border border-linea bg-superficie">
+        <div className="flex items-center justify-between gap-2 border-b border-linea px-4 py-3">
+          <h2 className="text-[17px] font-semibold text-tinta">Partidas</h2>
+          {editable ? (
+            <button
+              type="button"
+              onClick={() => setHojaMenu(true)}
+              className="pressable min-h-12 rounded-boton px-3 text-[15px] font-semibold text-primario focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
             >
-              <span>
-                {partida.cantidad}× {partida.descripcion}
-                {partida.notas ? (
-                  <span className="mt-0.5 block text-xs text-neutral-500">
-                    {partida.notas}
+              + Agregar partida
+            </button>
+          ) : null}
+        </div>
+        {cuenta.partidas.length === 0 ? (
+          <p className="px-4 py-4 text-[15px] text-tinta-suave">
+            Sin partidas todavía.
+          </p>
+        ) : (
+          <ul className="divide-y divide-linea">
+            {cuenta.partidas.map((partida) => (
+              <li
+                key={partida.id}
+                className="flex items-center justify-between gap-3 px-4 py-3 text-[15px]"
+              >
+                <span className="min-w-0">
+                  <span className="font-medium text-tinta">
+                    {partida.cantidad}× {partida.descripcion}
                   </span>
-                ) : null}
-              </span>
-              <span className="flex items-center gap-2 tabular-nums">
-                {formatearMxn(partida.cantidad * partida.precio_centavos)}
-                {editable && !hayConsumo ? (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => {
-                      void quitar(partida.id);
-                    }}
-                    className="text-red-700 underline"
-                  >
-                    Quitar
-                  </button>
-                ) : null}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-3 text-right text-lg font-semibold tabular-nums">
-          Total {formatearMxn(cuenta.total_centavos)}
+                  {partida.notas ? (
+                    <span className="mt-0.5 block text-[13px] text-tinta-suave">
+                      {partida.notas}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="flex shrink-0 items-center gap-2 tabular text-tinta">
+                  <Monto
+                    centavos={partida.cantidad * partida.precio_centavos}
+                  />
+                  {editable && !hayConsumo ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => onQuitarToque(partida.id)}
+                      className={`pressable min-h-11 rounded-boton px-2 text-[13px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario ${
+                        confirmarQuitarId === partida.id
+                          ? "bg-peligro text-white"
+                          : "text-peligro underline underline-offset-2"
+                      }`}
+                    >
+                      {confirmarQuitarId === partida.id
+                        ? "¿Quitar? Sí"
+                        : "Quitar"}
+                    </button>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="border-t border-linea px-4 py-3 text-right text-[17px] font-semibold tabular text-tinta">
+          Total <Monto centavos={cuenta.total_centavos} />
         </p>
       </section>
 
-      <section className="rounded-2xl bg-white/90 p-4">
-        <h2 className="mb-3 text-lg font-semibold">Historial de cobros</h2>
+      <section className="rounded-hoja border border-linea bg-superficie">
+        <h2 className="border-b border-linea px-4 py-3 text-[17px] font-semibold text-tinta">
+          Cobros
+        </h2>
         {historial.length === 0 ? (
-          <p className="text-sm text-neutral-600">Aún no hay cobros.</p>
+          <p className="px-4 py-4 text-[15px] text-tinta-suave">
+            Aún no hay cobros.
+          </p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="divide-y divide-linea">
             {historial.map((cobro) => (
               <li key={cobro.id}>
                 <Link
                   href={`/cobros/${cobro.id}`}
-                  className="flex min-h-12 items-center justify-between gap-2 rounded-xl bg-neutral-50 px-3 text-sm"
+                  className="pressable flex min-h-12 items-center justify-between gap-2 px-4 text-[15px] text-tinta hover:bg-fondo focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primario"
                 >
                   <span>
                     {etiquetaEstadoCobro(cobro.estado)} ·{" "}
-                    {formatearMxn(cobro.monto_centavos)}
+                    <Monto centavos={cobro.monto_centavos} />
                   </span>
-                  <span className="text-neutral-500">
+                  <span className="text-tinta-suave">
                     {horaCorta(cobro.pagado_at ?? cobro.created_at)}
                   </span>
                 </Link>
@@ -434,70 +407,200 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
       </section>
 
       {error ? (
-        <p className="rounded-2xl bg-red-100 p-3 text-red-800">{error}</p>
+        <p className="rounded-hoja bg-peligro/10 p-3 text-peligro" role="alert">
+          {error}
+        </p>
       ) : null}
 
-      {cuenta.estado === "pagada" && !cuenta.cerrada_at ? (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => {
-            void cerrar();
-          }}
-          className="min-h-14 rounded-2xl bg-neutral-900 text-lg font-semibold text-white disabled:opacity-50"
-        >
-          Cerrar mesa
-        </button>
-      ) : null}
-
-      {cuenta.estado !== "pagada" ? (
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            disabled={busy || restante <= 0}
+      <div
+        className="barra-accion-fija fixed inset-x-0 z-30 mx-auto max-w-lg bg-superficie px-4 pt-2"
+        style={{
+          bottom: "calc(4rem + env(safe-area-inset-bottom))",
+        }}
+      >
+        {cuenta.estado === "pagada" && !cuenta.cerrada_at ? (
+          <Boton
+            tamano="lg"
+            disabled={busy}
             onClick={() => {
-              void cobrarTotal();
+              void cerrar();
             }}
-            className="min-h-14 rounded-2xl bg-emerald-800 text-lg font-semibold text-white disabled:opacity-50"
           >
-            {restante <= 0
-              ? "Cuenta cubierta"
-              : `Cobrar total (${formatearMxn(restante)})`}
-          </button>
-          <Link
-            href={`/cuentas/${cuentaId}/dividir`}
-            className="flex min-h-14 items-center justify-center rounded-2xl border border-emerald-800 text-lg font-semibold text-emerald-900"
-          >
-            Dividir cuenta
-          </Link>
-        </div>
-      ) : null}
+            Cerrar mesa
+          </Boton>
+        ) : null}
 
-      {sheetItem ? (
-        <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="sheet-titulo"
-        >
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-lg">
-            <h3 id="sheet-titulo" className="text-xl font-semibold">
-              {sheetItem.nombre}
-            </h3>
-            <p className="mt-1 tabular-nums text-neutral-700">
-              {formatearMxn(sheetItem.precio_centavos)}
+        {cuenta.estado !== "pagada" ? (
+          <div className="flex gap-2">
+            <Link
+              href={`/cuentas/${cuentaId}/dividir`}
+              className="pressable inline-flex min-h-14 w-1/3 items-center justify-center rounded-boton border border-linea bg-superficie text-[15px] font-semibold text-tinta hover:bg-fondo focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
+            >
+              Dividir
+            </Link>
+            <button
+              type="button"
+              disabled={busy || restante <= 0}
+              onClick={() => {
+                void cobrarTotal();
+              }}
+              className="pressable inline-flex min-h-14 w-2/3 items-center justify-center rounded-boton bg-primario text-[17px] font-semibold text-primario-tinta hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario disabled:opacity-50"
+            >
+              {restante <= 0 ? (
+                "Cuenta cubierta"
+              ) : (
+                <>
+                  Cobrar <Monto centavos={restante} />
+                </>
+              )}
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      <Hoja
+        abierta={hojaMenu && !sheetItem}
+        onCerrar={() => {
+          setHojaMenu(false);
+          setMostrarOtro(false);
+        }}
+        titulo="Agregar partida"
+      >
+        {categorias.length === 0 ? (
+          <p className="text-[15px] text-tinta-suave">
+            Aún no hay platillos activos.
+          </p>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2" role="tablist">
+              {categorias.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  role="tab"
+                  aria-selected={categoria === cat}
+                  onClick={() => setCategoria(cat)}
+                  className={`pressable min-h-12 rounded-boton px-4 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario ${
+                    categoria === cat
+                      ? "bg-primario text-primario-tinta"
+                      : "border border-linea text-tinta"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {itemsCategoria.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => abrirSheet(item)}
+                  className="pressable flex min-h-12 flex-col items-start justify-center rounded-boton border border-linea bg-fondo px-3 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario disabled:opacity-50"
+                >
+                  <span className="font-semibold leading-tight text-tinta">
+                    {item.nombre}
+                  </span>
+                  <span className="mt-1 text-[15px] tabular text-tinta-suave">
+                    <Monto centavos={item.precio_centavos} />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {esAdmin ? (
+          mostrarOtro ? (
+            <form
+              onSubmit={(e) => void agregarOtro(e)}
+              className="flex flex-col gap-2 border-t border-linea pt-3"
+            >
+              <p className="text-[15px] font-medium text-tinta">Otro (libre)</p>
+              <input
+                name="descripcion"
+                autoComplete="off"
+                className="min-h-12 rounded-boton border border-linea px-3"
+                placeholder="Descripción…"
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
+                required
+                maxLength={80}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  name="cantidad"
+                  autoComplete="off"
+                  className="min-h-12 rounded-boton border border-linea px-3"
+                  placeholder="Cantidad…"
+                  value={cant}
+                  onChange={(e) => setCant(e.target.value)}
+                  inputMode="numeric"
+                  required
+                />
+                <input
+                  name="precio"
+                  autoComplete="off"
+                  className="min-h-12 rounded-boton border border-linea px-3"
+                  placeholder="Precio pesos…"
+                  value={precio}
+                  onChange={(e) => setPrecio(e.target.value)}
+                  inputMode="decimal"
+                  required
+                />
+              </div>
+              <input
+                name="notasOtro"
+                autoComplete="off"
+                className="min-h-12 rounded-boton border border-linea px-3"
+                placeholder="Notas (opcional)…"
+                value={notasOtro}
+                onChange={(e) => setNotasOtro(e.target.value)}
+                maxLength={120}
+              />
+              <Boton type="submit" disabled={busy}>
+                Guardar partida
+              </Boton>
+              <Boton
+                type="button"
+                variante="secundario"
+                onClick={() => setMostrarOtro(false)}
+              >
+                Cancelar
+              </Boton>
+            </form>
+          ) : (
+            <Boton
+              variante="secundario"
+              onClick={() => setMostrarOtro(true)}
+            >
+              Otro
+            </Boton>
+          )
+        ) : null}
+      </Hoja>
+
+      <Hoja
+        abierta={sheetItem !== null}
+        onCerrar={() => setSheetItem(null)}
+        titulo={sheetItem?.nombre}
+      >
+        {sheetItem ? (
+          <>
+            <p className="tabular text-tinta-suave">
+              <Monto centavos={sheetItem.precio_centavos} />
             </p>
-            <div className="mt-4 flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-4">
               <button
                 type="button"
                 aria-label="Menos"
                 disabled={qty <= 1 || busy}
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="flex min-h-12 min-w-12 items-center justify-center rounded-xl border text-2xl font-bold disabled:opacity-40"
+                className="pressable flex min-h-12 min-w-12 items-center justify-center rounded-boton border border-linea text-2xl font-bold disabled:opacity-40"
               >
                 −
               </button>
-              <span className="min-w-8 text-center text-2xl font-semibold tabular-nums">
+              <span className="min-w-8 text-center text-2xl font-semibold tabular">
                 {qty}
               </span>
               <button
@@ -505,42 +608,42 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
                 aria-label="Más"
                 disabled={qty >= 99 || busy}
                 onClick={() => setQty((q) => Math.min(99, q + 1))}
-                className="flex min-h-12 min-w-12 items-center justify-center rounded-xl border text-2xl font-bold disabled:opacity-40"
+                className="pressable flex min-h-12 min-w-12 items-center justify-center rounded-boton border border-linea text-2xl font-bold disabled:opacity-40"
               >
                 +
               </button>
             </div>
-            <label className="mt-4 flex flex-col gap-1 text-sm">
+            <label className="flex flex-col gap-1 text-[15px]">
               Notas (opcional)
               <input
-                className="min-h-12 rounded-xl border px-3"
+                name="notas"
+                autoComplete="off"
+                className="min-h-12 rounded-boton border border-linea px-3"
                 value={notas}
                 onChange={(e) => setNotas(e.target.value)}
                 maxLength={120}
                 placeholder="Sin cebolla, poco picante…"
               />
             </label>
-            <button
-              type="button"
+            <Boton
+              tamano="lg"
               disabled={busy}
               onClick={() => {
                 void agregarDelMenu();
               }}
-              className="mt-4 min-h-14 w-full rounded-xl bg-neutral-900 text-lg font-semibold text-white disabled:opacity-50"
             >
               Agregar
-            </button>
-            <button
-              type="button"
+            </Boton>
+            <Boton
+              variante="secundario"
               disabled={busy}
               onClick={() => setSheetItem(null)}
-              className="mt-2 min-h-12 w-full rounded-xl border font-semibold"
             >
               Cancelar
-            </button>
-          </div>
-        </div>
-      ) : null}
+            </Boton>
+          </>
+        ) : null}
+      </Hoja>
     </div>
   );
 }

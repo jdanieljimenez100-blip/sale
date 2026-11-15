@@ -77,10 +77,18 @@ export function ReporteDesempeno(): ReactElement {
   }
 
   if (error) {
-    return <p className="rounded-2xl bg-red-100 p-4 text-red-800">{error}</p>;
+    return (
+      <p className="rounded-hoja bg-peligro/10 p-4 text-peligro" role="alert">
+        {error}
+      </p>
+    );
   }
   if (!reporte || !yo) {
-    return <p className="rounded-2xl bg-white/70 p-4">Cargando reporte…</p>;
+    return (
+      <p className="rounded-hoja border border-linea bg-superficie p-4 text-tinta-suave">
+        Cargando reporte…
+      </p>
+    );
   }
 
   const esAdmin = yo.rol === "admin";
@@ -101,9 +109,9 @@ export function ReporteDesempeno(): ReactElement {
   });
 
   const tarjeta = (label: string, valor: string): ReactElement => (
-    <div className="rounded-2xl bg-white/90 p-4">
-      <p className="text-sm text-neutral-600">{label}</p>
-      <p className="text-xl font-semibold">{valor}</p>
+    <div className="rounded-hoja border border-linea bg-superficie p-4">
+      <p className="text-[13px] text-tinta-suave">{label}</p>
+      <p className="text-[22px] font-semibold tabular text-tinta">{valor}</p>
     </div>
   );
 
@@ -132,10 +140,10 @@ export function ReporteDesempeno(): ReactElement {
             type="button"
             aria-pressed={dias === valor}
             onClick={() => setDias(valor)}
-            className={`min-h-12 flex-1 rounded-xl px-2 text-sm font-semibold ${
+            className={`pressable min-h-12 flex-1 rounded-boton px-2 text-[15px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario ${
               dias === valor
-                ? "bg-emerald-800 text-white"
-                : "bg-white/90 text-neutral-800"
+                ? "bg-primario text-primario-tinta"
+                : "border border-linea bg-superficie text-tinta"
             }`}
           >
             {label}
@@ -174,17 +182,17 @@ export function ReporteDesempeno(): ReactElement {
             )}
       </div>
 
-      <section className="rounded-2xl bg-white/90 p-4">
-        <h2 className="text-lg font-semibold">
+      <section className="rounded-hoja border border-linea bg-superficie p-4">
+        <h2 className="text-[17px] font-semibold text-tinta">
           {esAdmin ? "Desempeño por mesero" : "Mi desempeño"}
         </h2>
         {filas.length === 0 ? (
-          <p className="mt-2 text-neutral-600">Sin cobros en este periodo.</p>
+          <p className="mt-2 text-tinta-suave">Sin cobros en este periodo.</p>
         ) : (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[40rem] text-left text-sm">
+            <table className="w-full min-w-[40rem] text-left text-[15px]">
               <thead>
-                <tr className="border-b text-neutral-600">
+                <tr className="border-b border-linea text-tinta-suave">
                   {(
                     [
                       ["nombre", "Mesero"],
@@ -215,14 +223,16 @@ export function ReporteDesempeno(): ReactElement {
                 {filas.map((m) => (
                   <Fragment key={m.meseroId}>
                     <tr
-                      className="cursor-pointer border-b border-neutral-100 hover:bg-neutral-50"
+                      className="cursor-pointer border-b border-linea hover:bg-fondo"
                       onClick={() =>
                         setAbierto((id) =>
                           id === m.meseroId ? null : m.meseroId,
                         )
                       }
                     >
-                      <td className="py-3 pr-2 font-medium">{m.nombre}</td>
+                      <td className="py-3 pr-2 font-medium text-tinta">
+                        {m.nombre}
+                      </td>
                       <td className="py-3 pr-2">
                         {formatearMxn(m.ventasCentavos)}
                       </td>
@@ -254,33 +264,35 @@ export function ReporteDesempeno(): ReactElement {
                     </tr>
                     {abierto === m.meseroId ? (
                       <tr>
-                        <td colSpan={9} className="bg-neutral-50 px-3 py-3">
+                        <td colSpan={9} className="bg-fondo px-3 py-3">
                           {m.cocinaCentavos != null && esAdmin ? (
-                            <p className="mb-2 text-sm text-neutral-700">
+                            <p className="mb-2 text-[15px] text-tinta-suave">
                               Le toca a cocina: {formatearMxn(m.cocinaCentavos)}
                             </p>
                           ) : null}
-                          <p className="mb-2 font-medium">Últimas reseñas</p>
+                          <p className="mb-2 font-medium text-tinta">
+                            Últimas reseñas
+                          </p>
                           {m.ultimasResenas.length === 0 ? (
-                            <p className="text-neutral-600">Sin reseñas aún.</p>
+                            <p className="text-tinta-suave">Sin reseñas aún.</p>
                           ) : (
                             <ul className="flex flex-col gap-2">
                               {m.ultimasResenas.map((r) => (
                                 <li
                                   key={r.id}
-                                  className="rounded-xl bg-white px-3 py-2 text-sm"
+                                  className="rounded-boton border border-linea bg-superficie px-3 py-2 text-[15px]"
                                 >
-                                  <span className="font-medium">
+                                  <span className="font-medium text-tinta">
                                     {"★".repeat(r.estrellas)}
                                   </span>
-                                  <span className="ml-2 text-neutral-600">
+                                  <span className="ml-2 text-tinta-suave">
                                     Mesa {r.mesa ?? "—"} ·{" "}
                                     {new Date(r.createdAt).toLocaleDateString(
                                       "es-MX",
                                     )}
                                   </span>
                                   {r.comentario ? (
-                                    <p className="mt-1 whitespace-pre-wrap text-neutral-800">
+                                    <p className="mt-1 whitespace-pre-wrap text-tinta">
                                       {r.comentario}
                                     </p>
                                   ) : null}
@@ -298,7 +310,7 @@ export function ReporteDesempeno(): ReactElement {
           </div>
         )}
         {esAdmin && reporte.repartoCocinaPct > 0 ? (
-          <p className="mt-3 text-sm text-neutral-600">
+          <p className="mt-3 text-[15px] text-tinta-suave">
             Sale no mueve dinero: este reparto se paga por fuera.
           </p>
         ) : null}

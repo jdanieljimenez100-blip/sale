@@ -128,19 +128,23 @@ export function MenuAjustes(): ReactElement {
     <div className="flex flex-col gap-5">
       <form
         onSubmit={(e) => void crear(e)}
-        className="flex flex-col gap-2 rounded-2xl bg-white/90 p-4"
+        className="flex flex-col gap-2 rounded-hoja border border-linea bg-superficie p-4"
       >
-        <h2 className="text-lg font-semibold">Agregar platillo</h2>
+        <h2 className="text-[17px] font-semibold text-tinta">Agregar platillo</h2>
         <input
-          className="min-h-12 rounded-xl border px-3"
-          placeholder="Nombre"
+          name="nombre"
+          autoComplete="off"
+          className="min-h-12 rounded-boton border border-linea px-3"
+          placeholder="Nombre…"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           required
           maxLength={60}
         />
         <input
-          className="min-h-12 rounded-xl border px-3"
+          name="categoria"
+          autoComplete="off"
+          className="min-h-12 rounded-boton border border-linea px-3"
           placeholder="Categoría (Tacos, Bebidas…)"
           value={categoria}
           onChange={(e) => setCategoria(e.target.value)}
@@ -148,8 +152,10 @@ export function MenuAjustes(): ReactElement {
           maxLength={30}
         />
         <input
-          className="min-h-12 rounded-xl border px-3"
-          placeholder="Precio en pesos"
+          name="precio"
+          autoComplete="off"
+          className="min-h-12 rounded-boton border border-linea px-3"
+          placeholder="Precio en pesos…"
           value={precio}
           onChange={(e) => setPrecio(e.target.value)}
           inputMode="decimal"
@@ -158,50 +164,57 @@ export function MenuAjustes(): ReactElement {
         <button
           type="submit"
           disabled={busy}
-          className="min-h-12 rounded-xl bg-neutral-900 font-semibold text-white disabled:opacity-50"
+          className="pressable min-h-12 rounded-boton bg-primario font-semibold text-primario-tinta disabled:opacity-50"
         >
           Agregar
         </button>
       </form>
 
       {error ? (
-        <p className="rounded-2xl bg-red-100 p-3 text-red-800">{error}</p>
+        <p className="rounded-hoja bg-peligro/10 p-3 text-peligro" role="alert">
+          {error}
+        </p>
       ) : null}
 
       {porCategoria.length === 0 ? (
-        <p className="rounded-2xl bg-white/70 p-4 text-neutral-700">
+        <p className="rounded-hoja border border-linea bg-superficie p-4 text-tinta-suave">
           Sin platillos todavía.
         </p>
       ) : (
         porCategoria.map(([cat, list]) => (
-          <section key={cat} className="rounded-2xl bg-white/90 p-4">
-            <h2 className="mb-3 text-lg font-semibold">{cat}</h2>
+          <section
+            key={cat}
+            className="rounded-hoja border border-linea bg-superficie p-4"
+          >
+            <h2 className="mb-3 text-[17px] font-semibold text-tinta">{cat}</h2>
             <ul className="flex flex-col gap-3">
               {list.map((item) => (
                 <li
                   key={item.id}
-                  className={`flex flex-col gap-2 border-b border-neutral-100 pb-3 last:border-0 last:pb-0 ${
+                  className={`flex flex-col gap-2 border-b border-linea pb-3 last:border-0 last:pb-0 ${
                     item.activo ? "" : "opacity-60"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{item.nombre}</span>
+                    <span className="font-medium text-tinta">{item.nombre}</span>
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => {
                         void toggleActivo(item);
                       }}
-                      className="min-h-12 rounded-xl border px-3 text-sm font-semibold"
+                      className="pressable min-h-12 rounded-boton border border-linea px-3 text-[15px] font-semibold text-tinta"
                     >
                       {item.activo ? "Activo" : "Inactivo"}
                     </button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <label className="flex flex-1 flex-col gap-1 text-sm">
+                    <label className="flex flex-1 flex-col gap-1 text-[15px] text-tinta">
                       Precio (pesos)
                       <input
-                        className="min-h-12 rounded-xl border px-3 tabular-nums"
+                        name={`precio-${item.id}`}
+                        autoComplete="off"
+                        className="min-h-12 rounded-boton border border-linea px-3 tabular"
                         value={editPrecio[item.id] ?? ""}
                         onChange={(e) =>
                           setEditPrecio((prev) => ({
@@ -218,12 +231,12 @@ export function MenuAjustes(): ReactElement {
                       onClick={() => {
                         void guardarPrecio(item.id);
                       }}
-                      className="mt-5 min-h-12 rounded-xl bg-neutral-900 px-4 font-semibold text-white disabled:opacity-50"
+                      className="pressable mt-5 min-h-12 rounded-boton bg-primario px-4 font-semibold text-primario-tinta disabled:opacity-50"
                     >
                       Guardar
                     </button>
                   </div>
-                  <p className="text-xs text-neutral-500 tabular-nums">
+                  <p className="text-[13px] tabular text-tinta-suave">
                     Actual: {formatearMxn(item.precio_centavos)}
                   </p>
                 </li>

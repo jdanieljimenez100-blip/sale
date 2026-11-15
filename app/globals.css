@@ -1,12 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --fondo: #f3efe6;
-  --tinta: #1a1a1a;
-  --acento: #0f6b4c;
-  --pendiente: #6b7280;
-  --parcial: #ca8a04;
-  --pagada: #15803d;
+  --fondo: #edefea;
+  --superficie: #ffffff;
+  --linea: #d5d9d1;
+  --tinta: #15181a;
+  --tinta-suave: #5b6168;
+  --primario: #1d3c8f;
+  --primario-tinta: #ffffff;
+  --peligro: #b42318;
+  --pendiente-bg: #e2e5e0;
+  --pendiente-fg: #3f444a;
+  --parcial-bg: #fce7a8;
+  --parcial-fg: #6e4400;
+  --pagada-bg: #cbeed6;
+  --pagada-fg: #0e5a2d;
+  --pagada-solido: #15803d;
+  --radio-boton: 12px;
+  --radio-hoja: 16px;
+  --dur-rapida: 120ms;
+  --dur: 180ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-linea: var(--linea);
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-primario: var(--primario);
+  --color-primario-tinta: var(--primario-tinta);
+  --color-peligro: var(--peligro);
+  --color-pendiente-bg: var(--pendiente-bg);
+  --color-pendiente-fg: var(--pendiente-fg);
+  --color-parcial-bg: var(--parcial-bg);
+  --color-parcial-fg: var(--parcial-fg);
+  --color-pagada-bg: var(--pagada-bg);
+  --color-pagada-fg: var(--pagada-fg);
+  --color-pagada-solido: var(--pagada-solido);
+  --font-sans: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
+  --font-mesa: var(--font-barlow-semi), var(--font-barlow), ui-sans-serif,
+    system-ui, sans-serif;
+  --radius-boton: var(--radio-boton);
+  --radius-hoja: var(--radio-hoja);
 }
 
 html,
@@ -15,9 +52,152 @@ body {
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, #fff8e8 0%, transparent 45%),
-    linear-gradient(180deg, var(--fondo), #e8e2d4);
+  background: var(--fondo);
   color: var(--tinta);
-  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  font-family: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pressable {
+    transition: transform var(--dur-rapida) var(--ease);
+  }
+
+  .pressable:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .chip-estado {
+    transition:
+      background-color var(--dur) var(--ease),
+      color var(--dur) var(--ease);
+  }
+
+  .hoja-dialog {
+    transition:
+      transform var(--dur) var(--ease),
+      overlay var(--dur) var(--ease) allow-discrete,
+      display var(--dur) var(--ease) allow-discrete;
+    transform: translateY(0);
+  }
+
+  .hoja-dialog::backdrop {
+    transition:
+      opacity var(--dur) var(--ease),
+      overlay var(--dur) var(--ease) allow-discrete,
+      display var(--dur) var(--ease) allow-discrete;
+    opacity: 1;
+  }
+
+  @starting-style {
+    .hoja-dialog {
+      transform: translateY(100%);
+    }
+
+    .hoja-dialog::backdrop {
+      opacity: 0;
+    }
+  }
+}
+
+.hoja-dialog {
+  margin: auto 0 0;
+  width: 100%;
+  max-width: 32rem;
+  border: none;
+  border-radius: var(--radio-hoja) var(--radio-hoja) 0 0;
+  background: var(--superficie);
+  color: var(--tinta);
+  padding: 0;
+  box-shadow: 0 -8px 24px rgb(21 24 26 / 0.12);
+}
+
+.hoja-dialog::backdrop {
+  background: rgb(21 24 26 / 0.4);
+}
+
+.hoja-dialog:focus {
+  outline: none;
+}
+
+.pagado-check {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pagado-check {
+    animation: pagado-check-draw 300ms var(--ease) forwards;
+  }
+
+  .pagado-monto {
+    opacity: 0;
+    animation: pagado-monto-in 300ms var(--ease) 120ms forwards;
+  }
+}
+
+@keyframes pagado-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pagado-monto-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pagado-check {
+    stroke-dashoffset: 0;
+  }
+
+  .pagado-monto {
+    opacity: 1;
+  }
+}
+
+.barra-accion-fija {
+  box-shadow: 0 -8px 24px rgb(21 24 26 / 0.1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .anillo-pagada {
+    animation: anillo-pagada-fade 600ms var(--ease) forwards;
+  }
+
+  .punto-esperando {
+    animation: punto-esperando-pulse 1.2s var(--ease) infinite;
+  }
+}
+
+@keyframes anillo-pagada-fade {
+  0% {
+    box-shadow: 0 0 0 0 var(--pagada-solido);
+    opacity: 1;
+  }
+  40% {
+    box-shadow: 0 0 0 3px var(--pagada-solido);
+    opacity: 1;
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+    opacity: 1;
+  }
+}
+
+@keyframes punto-esperando-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
 }

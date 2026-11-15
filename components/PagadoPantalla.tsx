@@ -3,8 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactElement } from "react";
 import { TicketPagadoBloque } from "@/components/TicketPagadoBloque";
+import { Boton } from "@/components/ui/Boton";
+import { Monto } from "@/components/ui/Monto";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { apiFetch } from "@/lib/client-api";
-import { formatearMxn, pesosTextoACentavos } from "@/lib/money";
+import { pesosTextoACentavos } from "@/lib/money";
 import { calcularMontoPropinaPorcentaje } from "@/lib/propina";
 import type { Database } from "@/lib/supabase/types";
 
@@ -22,6 +25,42 @@ type PropinaResponse =
   | { cobro: Cobro; yaExistia: boolean };
 
 type Paso = "propina" | "resena" | "listo";
+
+function BloquePagado({
+  titulo,
+  centavos,
+}: {
+  titulo: string;
+  centavos: number;
+}): ReactElement {
+  return (
+    <div className="rounded-hoja bg-pagada-solido px-6 py-12 text-center text-white">
+      <svg
+        className="mx-auto"
+        width="56"
+        height="56"
+        viewBox="0 0 56 56"
+        fill="none"
+        aria-hidden
+      >
+        <circle cx="28" cy="28" r="26" stroke="currentColor" strokeWidth="3" />
+        <path
+          className="pagado-check"
+          d="M16 29 L24 37 L40 19"
+          stroke="currentColor"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </svg>
+      <h1 className="mt-4 text-[32px] font-bold">{titulo}</h1>
+      <p className="pagado-monto mt-3 font-mesa text-[48px] font-bold leading-none tabular">
+        <Monto centavos={centavos} />
+      </p>
+    </div>
+  );
+}
 
 export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
   const router = useRouter();
@@ -119,10 +158,19 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
   }
 
   if (error && !cobro) {
-    return <p className="rounded-2xl bg-red-100 p-4 text-red-800">{error}</p>;
+    return (
+      <p className="rounded-hoja bg-peligro/10 p-4 text-peligro" role="alert">
+        {error}
+      </p>
+    );
   }
   if (!cobro) {
-    return <p className="rounded-2xl bg-white/70 p-4">Confirmando pago…</p>;
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true">
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
   }
 
   const meseroNombre = propinaInfo?.meseroNombre ?? "el mesero";
@@ -130,11 +178,15 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
 
   const bloqueResena =
     paso === "resena" && cobroResenaId ? (
-      <section className="rounded-2xl bg-white/90 p-4 text-left">
-        <h2 className="text-xl font-semibold">
+      <section className="rounded-hoja border border-linea bg-superficie p-4 text-left">
+        <h2 className="text-[22px] font-semibold text-tinta text-pretty">
           ¿Cómo te atendió {meseroNombre}?
         </h2>
-        <div className="mt-4 flex justify-center gap-2" role="group" aria-label="Calificación">
+        <div
+          className="mt-4 flex justify-center gap-2"
+          role="group"
+          aria-label="Calificación"
+        >
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
@@ -143,44 +195,47 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
               aria-pressed={estrellas === n}
               disabled={busy}
               onClick={() => setEstrellas(n)}
-              className={`min-h-14 min-w-14 rounded-xl text-3xl disabled:opacity-50 ${
+              className={`pressable flex min-h-14 min-w-14 items-center justify-center rounded-boton text-[28px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario disabled:opacity-50 ${
                 estrellas >= n
-                  ? "bg-amber-400 text-amber-950"
-                  : "bg-neutral-100 text-neutral-400"
+                  ? "bg-parcial-bg text-parcial-fg"
+                  : "bg-fondo text-tinta-suave"
               }`}
             >
               ★
             </button>
           ))}
         </div>
-        <label className="mt-4 flex flex-col gap-1 text-sm">
+        <label className="mt-4 flex flex-col gap-1 text-[15px] text-tinta">
           Comentario (opcional)
           <textarea
-            className="min-h-24 rounded-xl border px-3 py-2"
+            name="comentario"
+            autoComplete="off"
+            className="min-h-24 rounded-boton border border-linea px-3 py-2"
             maxLength={280}
             value={comentario}
             onChange={(event) => setComentario(event.target.value)}
-            placeholder="Cuéntanos cómo te fue"
+            placeholder="Cuéntanos cómo te fue…"
           />
         </label>
-        <button
-          type="button"
+        <Boton
+          tamano="lg"
+          className="mt-3"
           disabled={busy || estrellas < 1}
           onClick={() => {
             void enviarResena();
           }}
-          className="mt-3 min-h-14 w-full rounded-xl bg-emerald-800 font-semibold text-white disabled:opacity-50"
         >
           Enviar
-        </button>
-        <button
-          type="button"
+        </Boton>
+        <Boton
+          variante="secundario"
+          tamano="lg"
+          className="mt-2"
           disabled={busy}
           onClick={() => setPaso("listo")}
-          className="mt-2 min-h-14 w-full rounded-xl border border-neutral-400 font-semibold"
         >
           Omitir
-        </button>
+        </Boton>
       </section>
     ) : null;
 
@@ -193,27 +248,20 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
     paso === "listo" || (cobro.tipo === "propina" && paso !== "resena") ? (
       <div className="flex flex-col gap-3">
         {resenaEnviada ? (
-          <p className="rounded-2xl bg-emerald-50 p-4 text-lg font-medium text-emerald-900">
+          <p className="rounded-hoja bg-pagada-bg p-4 text-[17px] font-medium text-pagada-fg">
             ¡Gracias por tu opinión!
           </p>
         ) : null}
-        <button
-          type="button"
-          onClick={() => router.push("/cuentas")}
-          className="min-h-14 rounded-2xl bg-neutral-900 text-lg font-semibold text-white"
-        >
+        <Boton tamano="lg" onClick={() => router.push("/cuentas")}>
           Volver a Mesas
-        </button>
+        </Boton>
       </div>
     ) : null;
 
   if (cobro.tipo === "propina") {
     return (
       <div className="flex flex-col gap-6 text-center">
-        <div className="rounded-3xl bg-emerald-600 px-6 py-16 text-white shadow-lg">
-          <h1 className="text-5xl font-bold">¡Gracias!</h1>
-          <p className="mt-4 text-2xl">{formatearMxn(cobro.monto_centavos)}</p>
-        </div>
+        <BloquePagado titulo="¡Gracias!" centavos={cobro.monto_centavos} />
         {bloqueTicket}
         {bloqueResena}
         {paso === "listo" ? bloqueListo : null}
@@ -221,33 +269,37 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
           <button
             type="button"
             onClick={() => router.push("/cuentas")}
-            className="min-h-12 text-sm text-neutral-600 underline"
+            className="min-h-12 text-[15px] text-tinta-suave underline underline-offset-2"
           >
             Cerrar sin calificar
           </button>
         ) : null}
-        {error ? <p className="text-red-700">{error}</p> : null}
+        {error ? (
+          <p className="text-peligro" role="alert">
+            {error}
+          </p>
+        ) : null}
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-6 text-center">
-      <div className="rounded-3xl bg-emerald-600 px-6 py-16 text-white shadow-lg">
-        <p className="text-sm uppercase tracking-[0.25em]">Listo</p>
-        <h1 className="mt-4 text-5xl font-bold">Pagado</h1>
-        <p className="mt-4 text-2xl">{formatearMxn(cobro.monto_centavos)}</p>
-      </div>
+      <BloquePagado titulo="Pagado" centavos={cobro.monto_centavos} />
 
       {bloqueTicket}
 
       {paso === "propina" ? (
-        <section className="rounded-2xl bg-white/90 p-4 text-left">
-          <h2 className="text-xl font-semibold">¿Propina para el mesero?</h2>
+        <section className="rounded-hoja border border-linea bg-superficie p-4 text-left">
+          <h2 className="text-[22px] font-semibold text-tinta text-pretty">
+            ¿Propina para el mesero?
+          </h2>
           {propinaInfo ? (
-            <p className="mt-1 text-sm text-neutral-700">{propinaInfo.mensaje}</p>
+            <p className="mt-1 text-[15px] text-tinta-suave">
+              {propinaInfo.mensaje}
+            </p>
           ) : null}
-          <div className="mt-4 grid grid-cols-1 gap-2">
+          <div className="mt-4 grid grid-cols-3 gap-2">
             {porcentajes.map((pct) => {
               const monto = calcularMontoPropinaPorcentaje(
                 cobro.monto_centavos,
@@ -261,48 +313,57 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
                   onClick={() => {
                     void enviarPropina({ porcentaje: pct });
                   }}
-                  className="min-h-14 rounded-xl bg-emerald-800 text-base font-semibold text-white disabled:opacity-50"
+                  className="pressable flex min-h-14 flex-col items-center justify-center rounded-boton bg-primario px-1 text-[15px] font-semibold text-primario-tinta hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario disabled:opacity-50"
                 >
-                  {pct}% · {formatearMxn(monto)}
+                  <span>{pct}%</span>
+                  <span className="text-[13px] font-medium tabular opacity-90">
+                    <Monto centavos={monto} />
+                  </span>
                 </button>
               );
             })}
           </div>
-          <label className="mt-4 flex flex-col gap-1 text-sm">
+          <label className="mt-4 flex flex-col gap-1 text-[15px] text-tinta">
             Otra cantidad (pesos)
             <input
-              className="min-h-12 rounded-xl border px-3"
+              name="otraPropina"
+              autoComplete="off"
+              className="min-h-12 rounded-boton border border-linea px-3"
               value={otra}
               onChange={(event) => setOtra(event.target.value)}
               inputMode="decimal"
-              placeholder="12.50"
+              placeholder="12.50…"
             />
           </label>
-          <button
-            type="button"
+          <Boton
+            variante="secundario"
+            tamano="lg"
+            className="mt-2"
             disabled={busy}
             onClick={() => {
               try {
                 const monto = pesosTextoACentavos(otra);
                 void enviarPropina({ montoCentavos: monto });
               } catch (err) {
-                setError(err instanceof Error ? err.message : "Monto inválido");
+                setError(
+                  err instanceof Error ? err.message : "Monto inválido",
+                );
               }
             }}
-            className="mt-2 min-h-14 w-full rounded-xl bg-neutral-900 font-semibold text-white disabled:opacity-50"
           >
             Cobrar otra cantidad
-          </button>
-          <button
-            type="button"
+          </Boton>
+          <Boton
+            variante="secundario"
+            tamano="lg"
+            className="mt-3"
             disabled={busy}
             onClick={() => {
               void enviarPropina({ ninguna: true });
             }}
-            className="mt-3 min-h-14 w-full rounded-xl border border-neutral-400 font-semibold"
           >
             Sin propina
-          </button>
+          </Boton>
         </section>
       ) : null}
 
@@ -314,13 +375,17 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
         <button
           type="button"
           onClick={() => router.push("/cuentas")}
-          className="min-h-12 text-sm text-neutral-600 underline"
+          className="min-h-12 text-[15px] text-tinta-suave underline underline-offset-2"
         >
           Cerrar sin calificar
         </button>
       ) : null}
 
-      {error ? <p className="text-red-700">{error}</p> : null}
+      {error ? (
+        <p className="text-peligro" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -13,7 +13,10 @@ export default async function CuentaPage({
   const { id } = await params;
   return (
     <MeseroChrome>
-      <Link href="/cuentas" className="text-sm text-neutral-700 underline">
+      <Link
+        href="/cuentas"
+        className="text-[15px] font-semibold text-primario underline underline-offset-2"
+      >
         ← Mesas
       </Link>
       <CuentaDetalle cuentaId={id} />

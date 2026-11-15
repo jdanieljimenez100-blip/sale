@@ -12,7 +12,7 @@ export function MeseroChrome({
 }): ReactElement {
   return (
     <SesionGate rol={rol}>
-      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 px-4 py-8 pb-28">
+      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 px-4 pb-[calc(4rem+env(safe-area-inset-bottom)+1rem)] pt-0">
         <EncabezadoSesion />
         {children}
         <NavInferior />

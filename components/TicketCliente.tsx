@@ -47,7 +47,7 @@ export function TicketCliente(props: Props): ReactElement {
         }
       `}</style>
       <main className="mx-auto flex min-h-dvh w-full max-w-[380px] flex-col gap-4 px-4 py-8">
-        <article className="ticket-sheet rounded-2xl bg-white p-5 font-mono text-sm text-neutral-900 shadow">
+        <article className="ticket-sheet rounded-hoja border border-linea bg-superficie p-5 font-mono text-sm text-tinta">
           <header className="border-b border-dashed border-neutral-300 pb-3 text-center">
             <h1 className="font-sans text-xl font-bold tracking-tight">
               {props.negocioNombre}
@@ -86,7 +86,7 @@ export function TicketCliente(props: Props): ReactElement {
 
           {props.pagosConsumo.length > 0 ? (
             <section className="mt-4">
-              <h2 className="font-sans text-xs font-semibold uppercase tracking-wide text-neutral-600">
+              <h2 className="font-sans text-[13px] font-semibold text-tinta-suave">
                 Pagos
               </h2>
               <ul className="mt-2 flex flex-col gap-1">
@@ -110,7 +110,7 @@ export function TicketCliente(props: Props): ReactElement {
 
           {props.propinas.length > 0 ? (
             <section className="mt-4">
-              <h2 className="font-sans text-xs font-semibold uppercase tracking-wide text-neutral-600">
+              <h2 className="font-sans text-[13px] font-semibold text-tinta-suave">
                 Propinas
               </h2>
               <ul className="mt-2 flex flex-col gap-1">

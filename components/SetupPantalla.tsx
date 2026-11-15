@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent, type ReactElement } from "react";
+import { Boton } from "@/components/ui/Boton";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { apiFetch } from "@/lib/client-api";
 
 export function SetupPantalla(): ReactElement {
@@ -42,11 +44,15 @@ export function SetupPantalla(): ReactElement {
   }
 
   if (disponible === null) {
-    return <p className="p-4">Cargando…</p>;
+    return (
+      <div aria-busy="true">
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
   }
   if (!disponible) {
     return (
-      <p className="rounded-2xl bg-red-100 p-4 text-red-800">
+      <p className="rounded-hoja bg-peligro/10 p-4 text-peligro" role="alert">
         Setup no disponible (ya hay un admin).
       </p>
     );
@@ -55,47 +61,53 @@ export function SetupPantalla(): ReactElement {
   return (
     <form
       onSubmit={(e) => void onSubmit(e)}
-      className="flex flex-col gap-4 rounded-2xl bg-white/90 p-4"
+      className="flex flex-col gap-4 rounded-hoja border border-linea bg-superficie p-4"
     >
-      <h1 className="text-2xl font-semibold">Primer admin</h1>
-      <p className="text-sm text-neutral-600">
+      <h1 className="text-[22px] font-semibold text-tinta">Primer admin</h1>
+      <p className="text-[15px] text-tinta-suave">
         Usa el DEMO_ACCESS_TOKEN del servidor. PIN de 6 dígitos.
       </p>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-[15px] text-tinta">
         Token de demo
         <input
-          className="min-h-12 rounded-xl border px-3"
+          name="demoToken"
+          autoComplete="off"
+          spellCheck={false}
+          className="min-h-12 rounded-boton border border-linea px-3"
           value={demoToken}
           onChange={(e) => setDemoToken(e.target.value)}
-          autoComplete="off"
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-[15px] text-tinta">
         Nombre
         <input
-          className="min-h-12 rounded-xl border px-3"
+          name="nombre"
+          autoComplete="name"
+          className="min-h-12 rounded-boton border border-linea px-3"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-[15px] text-tinta">
         PIN (6 dígitos)
         <input
-          className="min-h-12 rounded-xl border px-3"
+          name="pin"
+          autoComplete="one-time-code"
+          className="min-h-12 rounded-boton border border-linea px-3"
           value={pin}
           onChange={(e) => setPin(e.target.value)}
           inputMode="numeric"
           maxLength={6}
         />
       </label>
-      <button
-        type="submit"
-        disabled={busy}
-        className="min-h-14 rounded-xl bg-emerald-800 font-semibold text-white disabled:opacity-50"
-      >
+      <Boton type="submit" tamano="lg" disabled={busy}>
         Crear admin
-      </button>
-      {error ? <p className="text-red-700">{error}</p> : null}
+      </Boton>
+      {error ? (
+        <p className="text-peligro" role="alert">
+          {error}
+        </p>
+      ) : null}
     </form>
   );
 }

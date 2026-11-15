@@ -13,7 +13,10 @@ export default async function DividirPage({
   const { id } = await params;
   return (
     <MeseroChrome>
-      <Link href={`/cuentas/${id}`} className="text-sm underline">
+      <Link
+        href={`/cuentas/${id}`}
+        className="text-[15px] font-semibold text-primario underline underline-offset-2"
+      >
         ← Mesa
       </Link>
       <DividirCuenta cuentaId={id} />

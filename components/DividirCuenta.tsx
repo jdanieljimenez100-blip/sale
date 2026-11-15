@@ -1,9 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from "react";
+import { Boton } from "@/components/ui/Boton";
+import { Monto } from "@/components/ui/Monto";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { apiFetch } from "@/lib/client-api";
-import { formatearMxn, pesosTextoACentavos } from "@/lib/money";
+import { pesosTextoACentavos } from "@/lib/money";
 import type { CobroRow, CuentaConDetalle } from "@/services/cuentas";
 import { avanceDivision } from "@/services/dividir-avance";
 
@@ -96,7 +105,12 @@ export function DividirCuenta({ cuentaId }: Props): ReactElement {
   }
 
   if (!cuenta) {
-    return <p className="rounded-2xl bg-white/70 p-4">Cargando…</p>;
+    return (
+      <div className="flex flex-col gap-3" aria-busy="true">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
   }
 
   const avance = avanceDivision(cuenta.cobros);
@@ -106,22 +120,26 @@ export function DividirCuenta({ cuentaId }: Props): ReactElement {
   const hayPendiente = cuenta.cobros.some(
     (c) => c.tipo === "consumo" && c.estado === "pendiente",
   );
+  const montoPorPersona =
+    preview.length > 0 ? preview[0] ?? 0 : Math.floor(restante / Math.max(nEfectivo, 1));
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-3xl font-semibold">Dividir mesa {cuenta.mesa}</h1>
-      <p className="text-neutral-700">
-        Restante {formatearMxn(restante)}.
+      <h1 className="text-[32px] font-semibold text-tinta text-pretty">
+        Dividir mesa {cuenta.mesa}
+      </h1>
+      <p className="text-tinta-suave">
+        Restante <Monto centavos={restante} />.
       </p>
 
       {avance.total > 0 ? (
-        <div className="rounded-2xl bg-white/90 p-4">
-          <p className="font-semibold">
+        <div className="rounded-hoja border border-linea bg-superficie p-4">
+          <p className="font-semibold text-tinta">
             {avance.pagaron} de {avance.total} pagaron
           </p>
-          <div className="mt-2 h-3 overflow-hidden rounded-full bg-neutral-200">
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-linea">
             <div
-              className="h-full rounded-full bg-emerald-700"
+              className="h-full rounded-full bg-pagada-solido"
               style={{
                 width: `${avance.total ? (avance.pagaron / avance.total) * 100 : 0}%`,
               }}
@@ -131,36 +149,45 @@ export function DividirCuenta({ cuentaId }: Props): ReactElement {
       ) : null}
 
       {hayPendiente ? (
-        <p className="rounded-xl bg-amber-100 px-3 py-2 text-sm text-amber-950">
+        <p className="rounded-boton bg-parcial-bg px-3 py-2 text-[15px] text-parcial-fg">
           Esto reemplaza el QR que estaba abierto.
         </p>
       ) : null}
 
-      <section className="rounded-2xl bg-white/90 p-4">
-        <p className="mb-3 text-sm font-medium">¿Entre cuántas personas?</p>
+      <section className="rounded-hoja border border-linea bg-superficie p-4">
+        <p className="mb-3 text-[15px] font-medium text-tinta">
+          ¿Entre cuántas personas?
+        </p>
         <div className="grid grid-cols-4 gap-2">
-          {[2, 3, 4].map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => {
-                setOtro(false);
-                setPartes(n);
-              }}
-              className={`min-h-14 rounded-xl font-semibold ${
-                !otro && partes === n
-                  ? "bg-emerald-800 text-white"
-                  : "border border-neutral-300"
-              }`}
-            >
-              {n}
-            </button>
-          ))}
+          {[2, 3, 4].map((n) => {
+            const monto = partirIgual(restante, n)[0] ?? 0;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => {
+                  setOtro(false);
+                  setPartes(n);
+                }}
+                className={`pressable flex min-h-14 flex-col items-center justify-center rounded-boton text-[15px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario ${
+                  !otro && partes === n
+                    ? "bg-primario text-primario-tinta"
+                    : "border border-linea text-tinta"
+                }`}
+              >
+                <span>
+                  {n} · <Monto centavos={monto} />
+                </span>
+              </button>
+            );
+          })}
           <button
             type="button"
             onClick={() => setOtro(true)}
-            className={`min-h-14 rounded-xl font-semibold ${
-              otro ? "bg-emerald-800 text-white" : "border border-neutral-300"
+            className={`pressable min-h-14 rounded-boton font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario ${
+              otro
+                ? "bg-primario text-primario-tinta"
+                : "border border-linea text-tinta"
             }`}
           >
             Otro
@@ -168,75 +195,88 @@ export function DividirCuenta({ cuentaId }: Props): ReactElement {
         </div>
         {otro ? (
           <input
-            className="mt-3 min-h-12 w-full rounded-xl border px-3"
+            name="otroN"
+            autoComplete="off"
+            className="mt-3 min-h-12 w-full rounded-boton border border-linea px-3"
             value={otroN}
             onChange={(e) => setOtroN(e.target.value)}
             inputMode="numeric"
-            placeholder="Número de personas"
+            placeholder="Número de personas…"
           />
         ) : null}
 
         {preview.length > 0 ? (
-          <ul className="mt-4 space-y-1 text-sm">
+          <ul className="mt-4 space-y-1 text-[15px] text-tinta">
             {preview.map((centavos, i) => (
               <li key={`p-${i}`}>
-                Persona {i + 1}: {formatearMxn(centavos)}
+                Persona {i + 1}: <Monto centavos={centavos} />
               </li>
             ))}
           </ul>
+        ) : nEfectivo >= 2 ? (
+          <p className="mt-4 text-[15px] text-tinta-suave">
+            {nEfectivo} · <Monto centavos={montoPorPersona} /> aprox.
+          </p>
         ) : null}
 
-        <button
-          type="button"
+        <Boton
+          tamano="lg"
+          className="mt-4"
           disabled={busy}
           onClick={() => {
             void crearIgual();
           }}
-          className="mt-4 min-h-14 w-full rounded-2xl bg-emerald-800 font-semibold text-white disabled:opacity-50"
         >
           Crear QR
-        </button>
+        </Boton>
       </section>
 
-      <section className="rounded-2xl bg-white/90 p-4">
-        <label className="flex flex-col gap-2 text-sm">
+      <section className="rounded-hoja border border-linea bg-superficie p-4">
+        <label className="flex flex-col gap-2 text-[15px] text-tinta">
           Montos en pesos (separados por coma)
           <input
-            className="min-h-12 rounded-xl border px-3"
+            name="montosPesos"
+            autoComplete="off"
+            className="min-h-12 rounded-boton border border-linea px-3"
             value={montosPesos}
             onChange={(e) => setMontosPesos(e.target.value)}
-            placeholder="0.02,0.01,0.01"
+            placeholder="0.02,0.01,0.01…"
           />
         </label>
-        <button
-          type="button"
+        <Boton
+          variante="secundario"
+          tamano="lg"
+          className="mt-3"
           disabled={busy}
           onClick={() => {
             void crearMontos();
           }}
-          className="mt-3 min-h-14 w-full rounded-2xl border border-emerald-800 font-semibold text-emerald-900"
         >
           Crear QR por montos
-        </button>
+        </Boton>
       </section>
 
-      <ul className="flex flex-col gap-2">
+      <ul className="divide-y divide-linea rounded-hoja border border-linea bg-superficie">
         {activos.map((cobro, index) => (
           <li key={cobro.id}>
             <Link
               href={`/cobros/${cobro.id}`}
-              className="flex min-h-14 items-center justify-between rounded-2xl bg-white/90 px-4"
+              className="pressable flex min-h-14 items-center justify-between px-4 text-tinta hover:bg-fondo focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primario"
             >
               <span>
-                Persona {index + 1} · {formatearMxn(cobro.monto_centavos)}
+                Persona {index + 1} · <Monto centavos={cobro.monto_centavos} />
               </span>
-              <span className="text-sm text-neutral-600">{cobro.estado}</span>
+              <span className="text-[15px] text-tinta-suave">{cobro.estado}</span>
             </Link>
           </li>
         ))}
       </ul>
 
-      {error ? <p className="text-red-700">{error}</p> : null}
+      {error ? (
+        <p className="text-peligro" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

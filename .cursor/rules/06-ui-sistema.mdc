@@ -1,0 +1,21 @@
+---
+description: Sistema visual de Sale — tokens, estados y movimiento entre fases UI
+globs: app/**/*.tsx,components/**/*.tsx,app/globals.css
+alwaysApply: false
+---
+
+# Sistema visual
+
+Fuente de verdad: `docs/specs/ui-plan.md`. Una fase por turno; espera "OK".
+
+- Tokens (`bg-fondo`, `text-tinta`, `bg-primario`…) y `components/ui/`.
+  Prohibido: `emerald-*`, hex sueltos, `bg-[#…]` en componentes.
+- Verde solo = "pagada". Acciones principales = `--primario` (azul).
+- Estado = color + forma (○ pendiente, ◐ parcial, ● pagada). Nunca solo color.
+- Montos con `tabular-nums`. Toque ≥ 48 px; botón principal 56 px.
+- Sin sombras en listas; divisor 1 px `--linea`. Radio 12 / 16 px.
+- Sin ALL CAPS + tracking en labels.
+- Movimiento solo CSS (`transform` / `opacity` / color) bajo
+  `prefers-reduced-motion: no-preference`. Sin stagger, glow ni bounce.
+- No animes en cada poll: solo al cambiar estado (p. ej. → pagada).
+- No instales UI ni animación sin aprobación. No mezcles dos fases en un PR.

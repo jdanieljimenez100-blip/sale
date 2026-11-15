@@ -52,12 +52,16 @@ export function TicketPagadoBloque({
   }, [cuentaId]);
 
   if (error) {
-    return <p className="text-sm text-red-700">{error}</p>;
+    return (
+      <p className="text-[15px] text-peligro" role="alert">
+        {error}
+      </p>
+    );
   }
 
   if (!ticket || estadoCuenta === null) {
     return (
-      <p className="rounded-2xl bg-white/70 p-4 text-sm text-neutral-600">
+      <p className="rounded-hoja border border-linea bg-superficie p-4 text-[15px] text-tinta-suave">
         Cargando ticket…
       </p>
     );
@@ -65,9 +69,11 @@ export function TicketPagadoBloque({
 
   if (estadoCuenta !== "pagada" || !ticket.disponible) {
     return (
-      <section className="rounded-2xl bg-white/90 p-4 text-left">
-        <h2 className="text-lg font-semibold">Ticket del cliente</h2>
-        <p className="mt-2 text-sm text-neutral-700">
+      <section className="rounded-hoja border border-linea bg-superficie p-4 text-left">
+        <h2 className="text-[17px] font-semibold text-tinta">
+          Ticket del cliente
+        </h2>
+        <p className="mt-2 text-[15px] text-tinta-suave">
           El ticket aparece cuando la mesa quede pagada
         </p>
       </section>
@@ -87,9 +93,11 @@ export function TicketPagadoBloque({
   }
 
   return (
-    <section className="rounded-2xl bg-white/90 p-4 text-left">
-      <h2 className="text-lg font-semibold">Ticket del cliente</h2>
-      <p className="mt-1 text-sm text-neutral-600">Folio {ticket.folio}</p>
+    <section className="rounded-hoja border border-linea bg-superficie p-4 text-left">
+      <h2 className="text-[17px] font-semibold text-tinta">
+        Ticket del cliente
+      </h2>
+      <p className="mt-1 text-[15px] text-tinta-suave">Folio {ticket.folio}</p>
       {origin ? (
         <div className="mt-3">
           <QrImage value={url} label={`Ticket folio ${ticket.folio}`} />
@@ -100,7 +108,7 @@ export function TicketPagadoBloque({
         onClick={() => {
           void copiar();
         }}
-        className="mt-3 min-h-12 w-full rounded-xl border font-semibold"
+        className="pressable mt-3 min-h-12 w-full rounded-boton border border-linea font-semibold text-tinta"
       >
         {copiado ? "Enlace copiado" : "Copiar enlace"}
       </button>

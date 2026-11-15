@@ -32,10 +32,10 @@ export function MeseroSelector(): ReactElement {
   }, [cargar]);
 
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="text-neutral-600">Atiende:</span>
+    <label className="flex flex-col gap-1 text-[15px] text-tinta">
+      <span className="text-tinta-suave">Atiende:</span>
       <select
-        className="min-h-12 rounded-xl border bg-white px-3 text-base"
+        className="min-h-12 rounded-boton border border-linea bg-superficie px-3 text-[17px]"
         value={selected}
         onChange={(event) => {
           const id = event.target.value;

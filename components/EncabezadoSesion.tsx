@@ -20,24 +20,28 @@ export function EncabezadoSesion(): ReactElement {
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 text-sm">
-      <div className="flex items-center gap-2">
-        <p className="font-medium text-emerald-900">{yo.nombre}</p>
+    <header className="sticky top-0 z-30 -mx-4 flex min-h-11 items-center justify-between gap-2 border-b border-linea bg-fondo/95 px-4 py-2 backdrop-blur">
+      <div className="flex min-w-0 items-center gap-2">
+        <p className="truncate font-semibold text-tinta">{yo.nombre}</p>
         {esAdmin ? (
-          <span className="rounded-md bg-emerald-800 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+          <span className="shrink-0 rounded-boton bg-primario px-2 py-0.5 text-[13px] font-semibold text-primario-tinta">
             Admin
           </span>
         ) : null}
       </div>
-      <button
-        type="button"
-        onClick={() => {
-          void salir();
-        }}
-        className="min-h-10 rounded-xl px-3 font-semibold text-neutral-700 underline"
-      >
-        {esAdmin ? "Salir" : "Cambiar de mesero"}
-      </button>
-    </div>
+      {!esAdmin ? (
+        <button
+          type="button"
+          onClick={() => {
+            void salir();
+          }}
+          className="pressable min-h-11 shrink-0 rounded-boton px-3 text-[15px] font-semibold text-tinta-suave underline underline-offset-2 hover:text-tinta focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
+        >
+          Salir
+        </button>
+      ) : (
+        <span className="sr-only">Sesión admin</span>
+      )}
+    </header>
   );
 }

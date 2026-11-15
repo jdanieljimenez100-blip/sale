@@ -14,7 +14,7 @@ export default async function CobroPage({
   const permitirSimular = getServerEnv().PEY_MODE === "mock";
   return (
     <SesionGate>
-      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-6 px-4 py-8">
+      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-6 bg-superficie px-4 py-8">
         <CobroPantalla cobroId={id} permitirSimular={permitirSimular} />
       </main>
     </SesionGate>

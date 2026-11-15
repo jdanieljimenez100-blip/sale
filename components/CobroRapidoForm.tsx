@@ -31,7 +31,6 @@ export function CobroRapidoForm(): ReactElement {
           tipo: "consumo",
           montoCentavos,
           concepto,
-          numRef: "999",
         }),
       });
       router.push(`/cobros/${data.cobro.id}`);

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState, type ReactElement } from "rea
 import { QrImage } from "@/components/QrImage";
 import { apiFetch } from "@/lib/client-api";
 import { formatearMxn } from "@/lib/money";
-import { beep, instalarUnlockAudio } from "@/lib/sonido";
+import { beep } from "@/lib/sonido";
 import type { Database } from "@/lib/supabase/types";
 
 type Cobro = Database["public"]["Tables"]["cobros"]["Row"];
@@ -24,8 +24,6 @@ export function CobroPantalla({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const redirected = useRef(false);
-
-  useEffect(() => instalarUnlockAudio(), []);
 
   const cargar = useCallback(async (): Promise<void> => {
     try {

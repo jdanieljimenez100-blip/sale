@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { AudioUnlock } from "@/components/AudioUnlock";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,7 +26,10 @@ export default function RootLayout({
 }>): ReactNode {
   return (
     <html lang="es-MX">
-      <body className="min-h-dvh antialiased">{children}</body>
+      <body className="min-h-dvh antialiased">
+        <AudioUnlock />
+        {children}
+      </body>
     </html>
   );
 }

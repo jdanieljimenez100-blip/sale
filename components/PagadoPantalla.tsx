@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactElement } from "react";
 import { apiFetch } from "@/lib/client-api";
 import { formatearMxn } from "@/lib/money";
@@ -13,6 +14,7 @@ type CrearResponse = { cobro: Cobro };
 const PCTS = [10, 15, 20] as const;
 
 export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
+  const router = useRouter();
   const [cobro, setCobro] = useState<Cobro | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [otra, setOtra] = useState("1");
@@ -47,7 +49,7 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
           concepto: `Propina mesa`,
         }),
       });
-      window.location.href = `/cobros/${data.cobro.id}`;
+      router.push(`/cobros/${data.cobro.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo crear propina");
       setBusy(false);

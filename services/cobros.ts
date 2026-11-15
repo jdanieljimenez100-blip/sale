@@ -71,6 +71,21 @@ export async function obtenerCobro(cobroId: string): Promise<CobroRow | null> {
   return data;
 }
 
+export async function obtenerCobroPorPeyQrId(
+  peyQrId: string,
+): Promise<CobroRow | null> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("cobros")
+    .select("*")
+    .eq("pey_qr_id", peyQrId)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`No se pudo leer cobro por pey_qr_id: ${error.message}`);
+  }
+  return data;
+}
+
 export async function aplicarPagoWebhook(args: {
   eventId: string;
   payload: PeyWebhookPayload;

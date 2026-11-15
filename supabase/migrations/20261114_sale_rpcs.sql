@@ -1,5 +1,5 @@
 -- Definiciones de las RPCs sale_* (extraídas del proyecto remoto con pg_get_functiondef).
--- Permisos: solo service_role (alineado con 20261114_lock_sale_rpcs.sql).
+-- Permisos: solo service_role (alineado con 20261115_99_lock_sale_rpcs.sql).
 
 CREATE OR REPLACE FUNCTION public.sale_insert_cobro(
   p_cuenta_id uuid,
@@ -102,9 +102,9 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.sale_insert_cobro(uuid, uuid, public.tipo_cobro, integer, text, text, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.sale_mark_cobro_pagado(text, text, text, timestamptz) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.sale_set_cuenta_estado(uuid, public.estado_cuenta) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.sale_insert_cobro(uuid, uuid, public.tipo_cobro, integer, text, text, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.sale_mark_cobro_pagado(text, text, text, timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.sale_set_cuenta_estado(uuid, public.estado_cuenta) FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.sale_insert_cobro(uuid, uuid, public.tipo_cobro, integer, text, text, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.sale_mark_cobro_pagado(text, text, text, timestamptz) TO service_role;

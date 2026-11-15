@@ -87,8 +87,8 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.sale_expire_consumo_pendientes(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.sale_expire_consumo_pendientes(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.sale_expire_consumo_pendientes(uuid) TO service_role;
 
-REVOKE ALL ON FUNCTION public.sale_mark_cobro_pagado(text, text, text, timestamptz) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.sale_mark_cobro_pagado(text, text, text, timestamptz) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.sale_mark_cobro_pagado(text, text, text, timestamptz) TO service_role;

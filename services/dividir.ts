@@ -41,6 +41,7 @@ export async function dividirCuentaIgual(
       tipo: "consumo",
       montoCentavos: monto,
       concepto: `Mesa ${cuenta.mesa} — parte ${i + 1} de ${montos.length}`,
+      numRef: cuenta.mesa,
     });
     cobros.push(cobro);
   }
@@ -79,6 +80,7 @@ export async function dividirCuentaPorMontos(
       tipo: "consumo",
       montoCentavos: monto,
       concepto: `Mesa ${cuenta.mesa} — parte ${i + 1} de ${montosCentavos.length}`,
+      numRef: cuenta.mesa,
     });
     cobros.push(cobro);
   }

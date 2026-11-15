@@ -19,12 +19,15 @@ npx vercel --prod
 1. Variables en Vercel (y local `.env.local`):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (opcional; hay RPCs `sale_*` si falta)
-   - `DEMO_ACCESS_TOKEN` (local demo: `sale-demo-2026`)
+   - `SUPABASE_SERVICE_ROLE_KEY` (**obligatoria**; solo servidor)
+   - `DEMO_ACCESS_TOKEN` (en Vercel usa uno distinto al local: el repo es público)
    - `PEY_MODE=mock` para ensayo sin banco; `real` para $0.01
    - Si `real`: `PEY_API_KEY`, `PEY_WEBHOOK_SECRET`, `PEY_BANK_ACCOUNT_RESTAURANTE`, `PEY_BANK_ACCOUNT_MESERO`
-2. En la app, guarda el token de demo en la barra superior.
-3. En portal.pey.mx, webhook: `https://<tu-app>/api/webhooks/pey`
+     (los `PEY_BANK_ACCOUNT_*` son el ID de pey de la cuenta, tipo ULID, con `codiStatus: ACTIVE`; no la CLABE)
+2. Con la service role ya puesta, aplica `supabase/migrations/20261114_lock_sale_rpcs.sql`
+   (quita a `anon` el permiso de ejecutar las RPCs `sale_*`).
+3. En la app, guarda el token de demo en la barra superior.
+4. En portal.mipey.mx, webhook: `https://<tu-app>/api/webhooks/pey`
 
 ## Ensayo local verificado
 

@@ -1,6 +1,7 @@
 import { Webhook } from "standardwebhooks";
 import { getServerEnv } from "@/lib/env";
 import { centavosParaPey } from "@/lib/pey/money-bridge";
+import { normalizarNumRef } from "@/lib/pey/num-ref";
 import type {
   CrearCobroInput,
   CrearCobroResult,
@@ -39,8 +40,9 @@ export function createRealPeyClient(): PeyClient {
         concept: input.concepto,
         expiration: input.expirationSeconds ?? 600,
       };
-      if (input.numRef) {
-        body.numRef = input.numRef;
+      const numRef = normalizarNumRef(input.numRef);
+      if (numRef) {
+        body.numRef = numRef;
       }
       if (input.bankAccountId) {
         body.bankAccountId = input.bankAccountId;

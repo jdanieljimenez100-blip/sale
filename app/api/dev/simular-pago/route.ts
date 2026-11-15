@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
-import { assertDemoToken } from "@/lib/demo-auth";
+import { assertDemoToken, DEMO_TOKEN_HEADER } from "@/lib/demo-auth";
 import { getServerEnv } from "@/lib/env";
 import { obtenerCobro } from "@/services/cobros";
 
@@ -44,6 +44,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       headers: {
         "content-type": "application/json",
         "webhook-id": `mock_${payload.transactionId}`,
+        [DEMO_TOKEN_HEADER]: env.DEMO_ACCESS_TOKEN,
       },
       body: JSON.stringify(payload),
     });

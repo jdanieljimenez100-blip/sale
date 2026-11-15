@@ -1,9 +1,22 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { getServerEnv } from "@/lib/env";
 
-export function assertDemoToken(request: Request): void {
-  const token = request.headers.get("x-demo-token");
+/** Header con el secreto compartido de la demo. */
+export const DEMO_TOKEN_HEADER = "x-demo-token";
+
+/** Compara el token recibido con DEMO_ACCESS_TOKEN en tiempo constante. */
+export function demoTokenValido(token: string | null): boolean {
+  if (!token) {
+    return false;
+  }
   const expected = getServerEnv().DEMO_ACCESS_TOKEN;
-  if (!token || token !== expected) {
+  const a = createHash("sha256").update(token).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
+export function assertDemoToken(request: Request): void {
+  if (!demoTokenValido(request.headers.get(DEMO_TOKEN_HEADER))) {
     throw new DemoAuthError("Token de demo inválido");
   }
 }

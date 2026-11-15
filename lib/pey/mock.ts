@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { DEMO_TOKEN_HEADER, demoTokenValido } from "@/lib/demo-auth";
 import { centavosParaPey } from "@/lib/pey/money-bridge";
 import type {
   CrearCobroInput,
@@ -24,6 +25,12 @@ export function createMockPeyClient(): PeyClient {
     },
 
     async verificarWebhook(request: Request): Promise<VerificarWebhookResult> {
+      // En mock no hay firma de pey: solo aceptamos webhooks que traigan el
+      // token de demo (los manda /api/dev/simular-pago). Sin esto, cualquiera
+      // podría marcar un cobro como pagado con un POST a la URL pública.
+      if (!demoTokenValido(request.headers.get(DEMO_TOKEN_HEADER))) {
+        throw new Error("Webhook mock sin token de demo válido");
+      }
       const rawBody = await request.text();
       let body: unknown;
       try {

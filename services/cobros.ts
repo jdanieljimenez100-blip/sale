@@ -1,6 +1,7 @@
 import { getServerEnv } from "@/lib/env";
 import { getPeyClient } from "@/lib/pey";
 import type { PeyWebhookPayload } from "@/lib/pey";
+import { normalizarNumRef } from "@/lib/pey/num-ref";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database, TipoCobro } from "@/lib/supabase/types";
 import { obtenerCuenta, recalcularEstadoCuenta } from "@/services/cuentas";
@@ -14,6 +15,8 @@ export type CrearCobroAppInput = {
   montoCentavos: number;
   concepto: string;
   bankAccountId?: string;
+  /** Texto del que se toman los dígitos para numRef de pey (p. ej. la mesa). */
+  numRef?: string;
 };
 
 export async function crearCobroApp(
@@ -35,7 +38,7 @@ export async function crearCobroApp(
     montoCentavos: input.montoCentavos,
     concepto: input.concepto,
     bankAccountId,
-    numRef: input.cuentaId?.replaceAll("-", "").slice(0, 7),
+    numRef: normalizarNumRef(input.numRef),
   });
 
   const supabase = createServiceClient();
@@ -111,6 +114,7 @@ export async function cobrarTotalCuenta(cuentaId: string): Promise<CobroRow> {
     tipo: "consumo",
     montoCentavos: restante,
     concepto: `Mesa ${cuenta.mesa} — consumo`,
+    numRef: cuenta.mesa,
   });
 }
 

@@ -29,6 +29,14 @@ export async function procesarWebhookPey(
   } catch (error) {
     const message = error instanceof Error ? error.message : "webhook inválido";
     if (
+      /Falta PEY_WEBHOOK_SECRET|PEY_MODE=real requiere|Invalid environment|env inválido|SUPABASE_SERVICE_ROLE/i.test(
+        message,
+      )
+    ) {
+      console.error("[webhook/pey]", "config_fail");
+      return { status: 500, body: { error: "Configuración de pey incompleta" } };
+    }
+    if (
       error instanceof WebhookVerificationError ||
       /firma|signature|token de demo|Missing required headers/i.test(message)
     ) {

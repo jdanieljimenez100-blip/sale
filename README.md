@@ -4,6 +4,17 @@ Punto de venta web para restaurantes en México. Cobra con CoDi vía [pey](https
 
 **Demo en vivo:** https://hackaton-five-red.vercel.app
 
+### Credenciales de demo (hackatón)
+
+| Quién | Rol | PIN |
+|---|---|---|
+| Ana | mesero | `1245` |
+| Luis | mesero | `1245` |
+| Jorge | admin | `258963` |
+
+Entrar en `/entrar` → elegir nombre → PIN.  
+Setup (solo si aún no hay admin): `/setup` con token `sale-demo-2026`.
+
 ## Funcionalidades
 
 - PIN por mesero y roles **mesero** / **admin**

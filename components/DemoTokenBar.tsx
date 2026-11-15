@@ -28,7 +28,7 @@ export function DemoTokenBar(): ReactElement {
       className="flex flex-col gap-2 rounded-2xl bg-white/80 p-3 text-sm sm:flex-row sm:items-end"
     >
       <label className="flex flex-1 flex-col gap-1">
-        <span>Token de demo (`x-demo-token`)</span>
+        <span>Token de este dispositivo</span>
         <input
           className="min-h-12 rounded-xl border border-neutral-300 px-3"
           value={token}

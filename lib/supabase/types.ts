@@ -10,18 +10,24 @@ export type Database = {
           id: string;
           nombre: string;
           pey_bank_account_id: string | null;
+          propina_porcentajes: number[];
+          reparto_cocina_pct: number;
           created_at: string;
         };
         Insert: {
           id?: string;
           nombre: string;
           pey_bank_account_id?: string | null;
+          propina_porcentajes?: number[];
+          reparto_cocina_pct?: number;
           created_at?: string;
         };
         Update: {
           id?: string;
           nombre?: string;
           pey_bank_account_id?: string | null;
+          propina_porcentajes?: number[];
+          reparto_cocina_pct?: number;
           created_at?: string;
         };
         Relationships: [];
@@ -101,6 +107,36 @@ export type Database = {
           descripcion?: string;
           cantidad?: number;
           precio_centavos?: number;
+        };
+        Relationships: [];
+      };
+      resenas: {
+        Row: {
+          id: string;
+          cobro_id: string;
+          mesero_id: string;
+          cuenta_id: string | null;
+          estrellas: number;
+          comentario: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          cobro_id: string;
+          mesero_id: string;
+          cuenta_id?: string | null;
+          estrellas: number;
+          comentario?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          cobro_id?: string;
+          mesero_id?: string;
+          cuenta_id?: string | null;
+          estrellas?: number;
+          comentario?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };

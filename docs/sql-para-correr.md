@@ -12,7 +12,7 @@ Deja:
 - Ana `22222222-2222-2222-2222-222222222222` (mesas 1 y 2)
 - Luis `22222222-2222-2222-2222-222222222223` sin cuenta pey (mesa 3)
 - Mesa 1 = 1¢, Mesa 2 = 4¢ (4 partidas), Mesa 3 = 2¢
-- Sin cobros; cuentas en `pendiente`
+- Sin cobros ni reseñas; cuentas en `pendiente`
 
 ## 2) Permisos de RPCs (si aún no corriste el lock con anon/authenticated)
 
@@ -35,6 +35,18 @@ Verifica que Realtime de mesas siga vivo en `/cuentas`.
 
 Agrega `cobros.cobro_origen_id` + índice único parcial y actualiza `sale_insert_cobro`.
 
+## 5) Tabla de reseñas
+
+`supabase/migrations/20261116_resenas.sql`
+
+Tabla `resenas` con RLS (sin policies). Una reseña por cobro de consumo.
+
+## 6) Config de propinas del negocio
+
+`supabase/migrations/20261116_negocio_propinas.sql`
+
+Columnas `negocios.propina_porcentajes` y `negocios.reparto_cocina_pct`.
+
 ## Verificación
 
 ```sql
@@ -50,3 +62,16 @@ ORDER BY 1, 2;
 ```
 
 `anon` y `authenticated` deben salir `can_execute = false`.
+
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'cobros'
+  AND column_name = 'cobro_origen_id';
+
+SELECT relrowsecurity FROM pg_class
+WHERE relname = 'resenas';
+
+SELECT propina_porcentajes, reparto_cocina_pct
+FROM public.negocios
+WHERE id = '11111111-1111-1111-1111-111111111111';
+```

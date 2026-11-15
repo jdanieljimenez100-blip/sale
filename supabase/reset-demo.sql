@@ -4,6 +4,7 @@
 
 BEGIN;
 
+DELETE FROM public.resenas;
 DELETE FROM public.cobros;
 
 INSERT INTO public.negocios (id, nombre, pey_bank_account_id)

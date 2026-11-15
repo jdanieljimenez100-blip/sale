@@ -61,9 +61,87 @@ export async function crearCobroApp(
   });
 
   if (error || !data) {
-    throw new Error(`No se pudo guardar el cobro: ${error?.message ?? "sin data"}`);
+    throw new Error("No se pudo guardar el cobro");
   }
   return data;
+}
+
+export async function regenerarCobro(cobroId: string): Promise<CobroRow> {
+  const actual = await obtenerCobro(cobroId);
+  if (!actual) {
+    throw new Error("Cobro no encontrado");
+  }
+  if (actual.estado === "pagado") {
+    throw new Error("Ese cobro ya está pagado");
+  }
+
+  const supabase = createServiceClient();
+  const { error: expError } = await supabase
+    .from("cobros")
+    .update({ estado: "expirado" })
+    .eq("id", cobroId)
+    .in("estado", ["pendiente", "expirado"]);
+  if (expError) {
+    throw new Error("No se pudo reemplazar el QR");
+  }
+
+  let numRef = "1";
+  if (actual.cuenta_id) {
+    const cuenta = await obtenerCuenta(actual.cuenta_id);
+    if (cuenta) {
+      numRef = cuenta.mesa;
+    }
+  }
+
+  return crearCobroApp({
+    cuentaId: actual.cuenta_id ?? undefined,
+    meseroId: actual.mesero_id ?? undefined,
+    tipo: actual.tipo,
+    montoCentavos: actual.monto_centavos,
+    concepto: actual.concepto,
+    numRef,
+  });
+}
+
+export async function nombreNegocioDeCobro(
+  cobro: CobroRow,
+): Promise<string> {
+  const supabase = createServiceClient();
+  if (cobro.cuenta_id) {
+    const { data: cuenta } = await supabase
+      .from("cuentas")
+      .select("negocio_id")
+      .eq("id", cobro.cuenta_id)
+      .maybeSingle();
+    if (cuenta?.negocio_id) {
+      const { data: negocio } = await supabase
+        .from("negocios")
+        .select("nombre")
+        .eq("id", cuenta.negocio_id)
+        .maybeSingle();
+      if (negocio?.nombre) {
+        return negocio.nombre;
+      }
+    }
+  }
+  if (cobro.mesero_id) {
+    const { data: mesero } = await supabase
+      .from("meseros")
+      .select("negocio_id")
+      .eq("id", cobro.mesero_id)
+      .maybeSingle();
+    if (mesero?.negocio_id) {
+      const { data: negocio } = await supabase
+        .from("negocios")
+        .select("nombre")
+        .eq("id", mesero.negocio_id)
+        .maybeSingle();
+      if (negocio?.nombre) {
+        return negocio.nombre;
+      }
+    }
+  }
+  return "Sale";
 }
 
 export async function obtenerCobro(cobroId: string): Promise<CobroRow | null> {
@@ -74,7 +152,7 @@ export async function obtenerCobro(cobroId: string): Promise<CobroRow | null> {
     .eq("id", cobroId)
     .maybeSingle();
   if (error) {
-    throw new Error(`No se pudo leer cobro: ${error.message}`);
+    throw new Error("No se pudo leer el cobro");
   }
   return data;
 }
@@ -89,7 +167,7 @@ export async function obtenerCobroPorPeyQrId(
     .eq("pey_qr_id", peyQrId)
     .maybeSingle();
   if (error) {
-    throw new Error(`No se pudo leer cobro por pey_qr_id: ${error.message}`);
+    throw new Error("No se pudo buscar el cobro");
   }
   return data;
 }
@@ -107,7 +185,7 @@ export async function aplicarPagoWebhook(args: {
   });
 
   if (error) {
-    throw new Error(`No se pudo aplicar webhook: ${error.message}`);
+    throw new Error("No se pudo aplicar el pago");
   }
 
   const row = Array.isArray(data) ? data[0] : data;
@@ -128,7 +206,7 @@ export async function expirarConsumoPendiente(cuentaId: string): Promise<number>
     p_cuenta_id: cuentaId,
   });
   if (error) {
-    throw new Error(`No se pudieron expirar cobros: ${error.message}`);
+    throw new Error("No se pudieron actualizar los cobros anteriores");
   }
   return typeof data === "number" ? data : 0;
 }
@@ -165,7 +243,7 @@ export async function listarPropinasMesero(meseroId: string): Promise<CobroRow[]
     .gte("pagado_at", inicioHoy.toISOString())
     .order("pagado_at", { ascending: false });
   if (error) {
-    throw new Error(`No se pudieron listar propinas: ${error.message}`);
+    throw new Error("No se pudieron listar propinas");
   }
   return data;
 }

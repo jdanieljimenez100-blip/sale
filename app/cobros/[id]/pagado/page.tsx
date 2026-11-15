@@ -1,7 +1,6 @@
 import type { ReactElement } from "react";
 import { redirect } from "next/navigation";
 import { PagadoPantalla } from "@/components/PagadoPantalla";
-import { DemoTokenBar } from "@/components/DemoTokenBar";
 import { obtenerCobro } from "@/services/cobros";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +17,6 @@ export default async function PagadoPage({
   }
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-6 px-4 py-8">
-      <DemoTokenBar />
       <PagadoPantalla cobroId={id} />
     </main>
   );

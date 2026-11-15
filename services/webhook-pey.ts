@@ -29,7 +29,7 @@ export async function procesarWebhookPey(
   } catch (error) {
     const message = error instanceof Error ? error.message : "webhook inválido";
     if (
-      /Falta PEY_WEBHOOK_SECRET|PEY_MODE=real requiere|Invalid environment|env inválido|SUPABASE_SERVICE_ROLE/i.test(
+      /Falta PEY_WEBHOOK_SECRET|PEY_MODE=real requiere|Invalid environment|Variables de entorno inválidas|env inválido|SUPABASE_SERVICE_ROLE/i.test(
         message,
       )
     ) {

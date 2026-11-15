@@ -18,7 +18,10 @@
 | Seed Ana/Luis + `reset-demo.sql` | En repo — **tú corres** `docs/sql-para-correr.md` |
 | Día CDMX en reporte/propinas | OK |
 | Audio en layout + router.push | OK |
-| Repo público + Vercel | **Bloqueado: sin `gh` ni login Vercel** |
+| Repo público + Vercel | OK https://hackaton-five-red.vercel.app (mock) |
+| Env en Vercel | OK (cuentas 200; webhook sin token → 401) |
+| Reset seed Ana/Luis | **Tú: corre `supabase/reset-demo.sql`** (mesas siguen pagadas) |
+| Guion mock en URL pública | **Pendiente** (falta reset + DEMO_ACCESS_TOKEN prod) |
 | Pago real $0.01 | **Pendiente** |
 
 ## Publicar (manual)

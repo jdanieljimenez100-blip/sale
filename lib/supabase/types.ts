@@ -119,6 +119,7 @@ export type Database = {
           webhook_event_id: string | null;
           created_at: string;
           pagado_at: string | null;
+          cobro_origen_id: string | null;
         };
         Insert: {
           id?: string;
@@ -134,6 +135,7 @@ export type Database = {
           webhook_event_id?: string | null;
           created_at?: string;
           pagado_at?: string | null;
+          cobro_origen_id?: string | null;
         };
         Update: {
           id?: string;
@@ -149,6 +151,7 @@ export type Database = {
           webhook_event_id?: string | null;
           created_at?: string;
           pagado_at?: string | null;
+          cobro_origen_id?: string | null;
         };
         Relationships: [];
       };
@@ -164,6 +167,7 @@ export type Database = {
           p_pey_qr_id: string;
           p_qr_string: string;
           p_concepto: string;
+          p_cobro_origen_id?: string | null;
         };
         Returns: Database["public"]["Tables"]["cobros"]["Row"];
       };

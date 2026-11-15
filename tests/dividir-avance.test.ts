@@ -22,6 +22,7 @@ function cobro(
     webhook_event_id: null,
     created_at: new Date().toISOString(),
     pagado_at: null,
+    cobro_origen_id: null,
   };
 }
 

@@ -21,13 +21,19 @@ Si no, corre el cuerpo de:
 
 `supabase/migrations/20261115_99_lock_sale_rpcs.sql`
 
-## 3) Ocultar `pey_bank_account_id` a anon (Parte 1)
+## 3) Ocultar `pey_bank_account_id` a anon
 
 Corre todo:
 
 `supabase/migrations/20261115_hide_pey_bank_account_columns.sql`
 
 Verifica que Realtime de mesas siga vivo en `/cuentas`.
+
+## 4) Propina ligada al pago de consumo
+
+`supabase/migrations/20261116_cobro_origen_propina.sql`
+
+Agrega `cobros.cobro_origen_id` + índice único parcial y actualiza `sale_insert_cobro`.
 
 ## Verificación
 

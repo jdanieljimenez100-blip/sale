@@ -1,7 +1,7 @@
 import { hashPin, validarPin, verificarPin } from "@/lib/auth/pin";
 import type { RolSesion } from "@/lib/auth/sesion";
 import { HttpError } from "@/lib/api-error";
-import { getServerEnv } from "@/lib/env";
+import { demoTokenValido } from "@/lib/demo-auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 
@@ -112,8 +112,7 @@ export async function setupPrimerAdmin(input: {
   if (await hayAdminConPin()) {
     throw new HttpError("Not Found", 404);
   }
-  const expected = getServerEnv().DEMO_ACCESS_TOKEN;
-  if (input.demoToken !== expected) {
+  if (!demoTokenValido(input.demoToken)) {
     throw new HttpError("Token inválido", 401);
   }
   validarPin(input.pin, "admin");
@@ -124,32 +123,6 @@ export async function setupPrimerAdmin(input: {
 
   const pinHash = hashPin(input.pin);
   const supabase = createServiceClient();
-
-  const { data: existente } = await supabase
-    .from("meseros")
-    .select("*")
-    .ilike("nombre", nombre)
-    .limit(1)
-    .maybeSingle();
-
-  if (existente) {
-    const { data, error } = await supabase
-      .from("meseros")
-      .update({
-        rol: "admin",
-        pin_hash: pinHash,
-        pin_intentos_fallidos: 0,
-        pin_bloqueado_hasta: null,
-        activo: true,
-      })
-      .eq("id", existente.id)
-      .select("id, nombre")
-      .single();
-    if (error || !data) {
-      throw new Error("No se pudo promover al admin");
-    }
-    return { meseroId: data.id, nombre: data.nombre };
-  }
 
   const { data, error } = await supabase
     .from("meseros")

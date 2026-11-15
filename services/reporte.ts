@@ -1,0 +1,113 @@
+import {
+  inicioRangoMexicoCity,
+  type RangoReporteDias,
+} from "@/lib/dia-mexico";
+import {
+  calcularReporteDesempeno,
+  type ReporteDesempeno,
+  type ResenaParaReporte,
+} from "@/lib/reporte";
+import { createServiceClient } from "@/lib/supabase/server";
+
+export type {
+  FilaMeseroReporte,
+  ReporteDesempeno,
+  ResenaResumen,
+} from "@/lib/reporte";
+
+export {
+  calcularReporteDesempeno,
+  formatearDecimal1,
+  formatearPct1,
+  formatearSegundosPromedio,
+  ratioONull,
+} from "@/lib/reporte";
+
+type ResenaSelect = {
+  id: string;
+  cobro_id: string;
+  mesero_id: string;
+  estrellas: number;
+  comentario: string | null;
+  created_at: string;
+};
+
+export async function obtenerReporteDesempeno(
+  rangoDias: RangoReporteDias,
+): Promise<ReporteDesempeno> {
+  const desde = inicioRangoMexicoCity(rangoDias);
+  const supabase = createServiceClient();
+
+  const [
+    { data: cobros, error: cobrosError },
+    { data: meseros, error: meserosError },
+    { data: negocio },
+  ] = await Promise.all([
+    supabase
+      .from("cobros")
+      .select(
+        "id, mesero_id, cuenta_id, tipo, monto_centavos, cobro_origen_id, created_at, pagado_at",
+      )
+      .eq("estado", "pagado")
+      .gte("pagado_at", desde.toISOString()),
+    supabase.from("meseros").select("id, nombre"),
+    supabase
+      .from("negocios")
+      .select("reparto_cocina_pct")
+      .eq("id", "11111111-1111-1111-1111-111111111111")
+      .maybeSingle(),
+  ]);
+
+  if (cobrosError || meserosError) {
+    throw new Error("No se pudo armar el reporte");
+  }
+
+  const lista = cobros ?? [];
+  const cobroIds = lista.filter((c) => c.tipo === "consumo").map((c) => c.id);
+  const cuentaIds = [
+    ...new Set(
+      lista
+        .map((c) => c.cuenta_id)
+        .filter((id): id is string => typeof id === "string"),
+    ),
+  ];
+
+  let resenas: ResenaSelect[] = [];
+  if (cobroIds.length > 0) {
+    const { data } = await supabase
+      .from("resenas")
+      .select("id, cobro_id, mesero_id, estrellas, comentario, created_at")
+      .in("cobro_id", cobroIds);
+    resenas = data ?? [];
+  }
+
+  let cuentas: Array<{ id: string; mesa: string }> = [];
+  if (cuentaIds.length > 0) {
+    const { data } = await supabase
+      .from("cuentas")
+      .select("id, mesa")
+      .in("id", cuentaIds);
+    cuentas = data ?? [];
+  }
+
+  const mesaPorCuenta = new Map(cuentas.map((c) => [c.id, c.mesa] as const));
+  const mesaPorCobro = new Map(
+    lista
+      .filter((c) => c.cuenta_id)
+      .map((c) => [c.id, mesaPorCuenta.get(c.cuenta_id!) ?? null] as const),
+  );
+
+  const resenasConMesa: ResenaParaReporte[] = resenas.map((r) => ({
+    ...r,
+    mesa: mesaPorCobro.get(r.cobro_id) ?? null,
+  }));
+
+  return calcularReporteDesempeno({
+    rangoDias,
+    desdeIso: desde.toISOString(),
+    cobros: lista,
+    resenas: resenasConMesa,
+    meseros: meseros ?? [],
+    repartoCocinaPct: negocio?.reparto_cocina_pct ?? 0,
+  });
+}

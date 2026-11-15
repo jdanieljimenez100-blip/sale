@@ -2,6 +2,23 @@
 
 const ZONA = "America/Mexico_City";
 
+export type RangoReporteDias = 1 | 7 | 30;
+
+/**
+ * Inicio del rango (incluye hoy): medianoche CDMX de hace (dias - 1) días.
+ * Hoy = 1, últimos 7 días = 7, últimos 30 = 30.
+ */
+export function inicioRangoMexicoCity(
+  dias: RangoReporteDias,
+  ahora: Date = new Date(),
+): Date {
+  const inicioHoy = inicioDelDiaMexicoCity(ahora);
+  if (dias === 1) {
+    return inicioHoy;
+  }
+  return new Date(inicioHoy.getTime() - (dias - 1) * 24 * 60 * 60 * 1000);
+}
+
 /**
  * Devuelve el instante UTC correspondiente a las 00:00:00.000
  * del día civil de `ahora` en Ciudad de México.

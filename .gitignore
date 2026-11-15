@@ -9,3 +9,4 @@ tsconfig.tsbuildinfo
 !.env.example
 npm-debug.log*
 .cursor/mcp.json
+.vercel

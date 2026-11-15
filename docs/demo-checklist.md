@@ -23,7 +23,8 @@
 | Reset seed Ana/Luis | OK (mesas en pendiente) |
 | Guion mock en URL pública | OK Mesa 1 → cobrar → Simular → pagado |
 | webhook sin token | OK → 401 |
-| Pago real $0.01 | **Pendiente** (`PEY_MODE=real` + cuentas pey) |
+| Pago real $0.01 | OK cobro `b83d3d88…` Mesa 1 (webhook + tx) |
+| Reenvío webhook → applied=false | Probar desde portal.mipey.mx (idempotencia DB OK) |
 
 ## Publicar (manual)
 

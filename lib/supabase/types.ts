@@ -80,6 +80,7 @@ export type Database = {
           estado: EstadoCuenta;
           total_centavos: number;
           created_at: string;
+          cerrada_at: string | null;
         };
         Insert: {
           id?: string;
@@ -89,6 +90,7 @@ export type Database = {
           estado?: EstadoCuenta;
           total_centavos: number;
           created_at?: string;
+          cerrada_at?: string | null;
         };
         Update: {
           id?: string;
@@ -98,6 +100,7 @@ export type Database = {
           estado?: EstadoCuenta;
           total_centavos?: number;
           created_at?: string;
+          cerrada_at?: string | null;
         };
         Relationships: [];
       };
@@ -122,6 +125,30 @@ export type Database = {
           descripcion?: string;
           cantidad?: number;
           precio_centavos?: number;
+        };
+        Relationships: [];
+      };
+      bitacora: {
+        Row: {
+          id: string;
+          mesero_id: string | null;
+          accion: string;
+          detalle: Record<string, unknown>;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          mesero_id?: string | null;
+          accion: string;
+          detalle?: Record<string, unknown>;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          mesero_id?: string | null;
+          accion?: string;
+          detalle?: Record<string, unknown>;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -248,6 +275,35 @@ export type Database = {
           p_cuenta_id: string;
         };
         Returns: number;
+      };
+      sale_abrir_cuenta: {
+        Args: {
+          p_negocio_id: string;
+          p_mesero_id: string;
+          p_mesa: string;
+        };
+        Returns: Database["public"]["Tables"]["cuentas"]["Row"];
+      };
+      sale_agregar_partida: {
+        Args: {
+          p_cuenta_id: string;
+          p_descripcion: string;
+          p_cantidad: number;
+          p_precio_centavos: number;
+        };
+        Returns: Database["public"]["Tables"]["cuentas"]["Row"];
+      };
+      sale_quitar_partida: {
+        Args: {
+          p_partida_id: string;
+        };
+        Returns: Database["public"]["Tables"]["cuentas"]["Row"];
+      };
+      sale_cerrar_cuenta: {
+        Args: {
+          p_cuenta_id: string;
+        };
+        Returns: Database["public"]["Tables"]["cuentas"]["Row"];
       };
     };
     Enums: {

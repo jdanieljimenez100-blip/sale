@@ -2,17 +2,23 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
+import { AbrirMesa } from "@/components/AbrirMesa";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { apiFetch } from "@/lib/client-api";
 import { formatearMxn } from "@/lib/money";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
 import type { CuentaListaItem, ResumenMesas } from "@/services/cuentas";
 
-type CuentasResponse = { cuentas: CuentaListaItem[]; resumen: ResumenMesas };
+type CuentasResponse = {
+  cuentas: CuentaListaItem[];
+  cerradasHoy: CuentaListaItem[];
+  resumen: ResumenMesas;
+};
 type Yo = { meseroId: string; rol: "mesero" | "admin" };
 
 export function CuentasLista(): ReactElement {
   const [cuentas, setCuentas] = useState<CuentaListaItem[]>([]);
+  const [cerradasHoy, setCerradasHoy] = useState<CuentaListaItem[]>([]);
   const [resumen, setResumen] = useState<ResumenMesas | null>(null);
   const [filtro, setFiltro] = useState<"todas" | "mias">("mias");
   const [meseroId, setMeseroId] = useState<string | null>(null);
@@ -25,6 +31,7 @@ export function CuentasLista(): ReactElement {
       setMeseroId(yo.meseroId);
       const data = await apiFetch<CuentasResponse>("/api/cuentas");
       setCuentas(data.cuentas);
+      setCerradasHoy(data.cerradasHoy ?? []);
       setResumen(data.resumen);
       setError(null);
     } catch (err) {
@@ -71,18 +78,17 @@ export function CuentasLista(): ReactElement {
       filtro === "mias" && meseroId
         ? cuentas.filter((c) => c.mesero_id === meseroId)
         : cuentas;
-    const abiertas = base
-      .filter((c) => c.estado !== "pagada")
-      .sort((a, b) => {
-        const rank = (e: string): number =>
-          e === "parcial" ? 0 : e === "pendiente" ? 1 : 2;
-        return rank(a.estado) - rank(b.estado) || a.mesa.localeCompare(b.mesa);
-      });
-    const cerradas = base
-      .filter((c) => c.estado === "pagada")
-      .sort((a, b) => a.mesa.localeCompare(b.mesa));
+    const abiertas = [...base].sort((a, b) => {
+      const rank = (e: string): number =>
+        e === "parcial" ? 0 : e === "pendiente" ? 1 : 2;
+      return rank(a.estado) - rank(b.estado) || a.mesa.localeCompare(b.mesa);
+    });
+    const cerradas =
+      filtro === "mias" && meseroId
+        ? cerradasHoy.filter((c) => c.mesero_id === meseroId)
+        : cerradasHoy;
     return { abiertas, cerradas };
-  }, [cuentas, filtro, meseroId]);
+  }, [cuentas, cerradasHoy, filtro, meseroId]);
 
   if (loading) {
     return <p className="rounded-2xl bg-white/70 p-4">Cargando mesas…</p>;
@@ -100,6 +106,8 @@ export function CuentasLista(): ReactElement {
           <ResumenChip label="Mesas abiertas" value={String(resumen.mesasAbiertas)} />
         </div>
       ) : null}
+
+      <AbrirMesa />
 
       <div className="grid grid-cols-2 gap-2">
         <button

@@ -30,6 +30,7 @@ export { calcularEstadoCuenta };
 
 export async function listarCuentasConResumen(): Promise<{
   cuentas: CuentaListaItem[];
+  cerradasHoy: CuentaListaItem[];
   resumen: ResumenMesas;
 }> {
   const supabase = createServiceClient();
@@ -37,11 +38,22 @@ export async function listarCuentasConResumen(): Promise<{
 
   const [
     { data: cuentas, error },
+    { data: cerradas, error: cerradasError },
     { data: meseros, error: meserosError },
     { data: cobros, error: cobrosError },
     { data: cobrosHoy, error: hoyError },
   ] = await Promise.all([
-    supabase.from("cuentas").select("*").order("mesa", { ascending: true }),
+    supabase
+      .from("cuentas")
+      .select("*")
+      .is("cerrada_at", null)
+      .order("mesa", { ascending: true }),
+    supabase
+      .from("cuentas")
+      .select("*")
+      .not("cerrada_at", "is", null)
+      .gte("cerrada_at", inicioHoy.toISOString())
+      .order("cerrada_at", { ascending: false }),
     supabase.from("meseros").select("id, nombre"),
     supabase
       .from("cobros")
@@ -55,7 +67,7 @@ export async function listarCuentasConResumen(): Promise<{
       .gte("pagado_at", inicioHoy.toISOString()),
   ]);
 
-  if (error || meserosError || cobrosError || hoyError) {
+  if (error || cerradasError || meserosError || cobrosError || hoyError) {
     throw new Error("No se pudieron listar las mesas");
   }
 
@@ -71,7 +83,7 @@ export async function listarCuentasConResumen(): Promise<{
     );
   }
 
-  const items: CuentaListaItem[] = (cuentas ?? []).map((cuenta) => {
+  function aItem(cuenta: CuentaRow): CuentaListaItem {
     const pagado = pagadoPorCuenta.get(cuenta.id) ?? 0;
     return {
       ...cuenta,
@@ -79,7 +91,10 @@ export async function listarCuentasConResumen(): Promise<{
       pagado_consumo_centavos: pagado,
       restante_centavos: Math.max(0, cuenta.total_centavos - pagado),
     };
-  });
+  }
+
+  const items = (cuentas ?? []).map(aItem);
+  const cerradasHoy = (cerradas ?? []).map(aItem);
 
   const abiertas = items.filter((c) => c.estado !== "pagada");
   const resumen: ResumenMesas = {
@@ -88,7 +103,7 @@ export async function listarCuentasConResumen(): Promise<{
     mesasAbiertas: abiertas.length,
   };
 
-  return { cuentas: items, resumen };
+  return { cuentas: items, cerradasHoy, resumen };
 }
 
 export async function listarCuentas(): Promise<CuentaRow[]> {

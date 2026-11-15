@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, type ReactElement } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactElement,
+} from "react";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { apiFetch } from "@/lib/client-api";
 import { etiquetaEstadoCobro, formatearMxn } from "@/lib/money";
@@ -28,6 +34,10 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
   const [cuenta, setCuenta] = useState<CuentaConDetalle | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [desc, setDesc] = useState("");
+  const [cant, setCant] = useState("1");
+  const [precio, setPrecio] = useState("");
+  const [mostrarForm, setMostrarForm] = useState(false);
 
   const cargar = useCallback(async (): Promise<void> => {
     try {
@@ -53,11 +63,64 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     try {
       const data = await apiFetch<CobrarResponse>(
         `/api/cuentas/${cuentaId}/cobrar`,
-        { method: "POST", withDemoToken: true },
+        { method: "POST" },
       );
       router.push(`/cobros/${data.cobro.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cobrar");
+      setBusy(false);
+    }
+  }
+
+  async function agregar(event: FormEvent): Promise<void> {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/cuentas/${cuentaId}/partidas`, {
+        method: "POST",
+        body: JSON.stringify({
+          descripcion: desc,
+          cantidad: Number.parseInt(cant, 10),
+          precioPesos: precio,
+        }),
+      });
+      setDesc("");
+      setCant("1");
+      setPrecio("");
+      setMostrarForm(false);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo agregar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function quitar(partidaId: string): Promise<void> {
+    if (!window.confirm("¿Quitar esta partida?")) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/partidas/${partidaId}`, { method: "DELETE" });
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo quitar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cerrar(): Promise<void> {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/cuentas/${cuentaId}/cerrar`, { method: "POST" });
+      router.push("/cuentas");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo cerrar");
       setBusy(false);
     }
   }
@@ -74,6 +137,10 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     (c) => c.tipo === "propina" && c.estado === "pagado",
   );
   const historial = cuenta.cobros.filter((c) => c.tipo === "consumo");
+  const hayConsumo = historial.some(
+    (c) => c.estado === "pendiente" || c.estado === "pagado",
+  );
+  const editable = cuenta.estado !== "pagada" && !cuenta.cerrada_at;
 
   return (
     <div className="flex flex-col gap-5">
@@ -110,16 +177,81 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
         <h2 className="mb-3 text-lg font-semibold">Partidas</h2>
         <ul className="flex flex-col gap-2">
           {cuenta.partidas.map((partida) => (
-            <li key={partida.id} className="flex justify-between gap-3 text-sm">
+            <li
+              key={partida.id}
+              className="flex items-center justify-between gap-3 text-sm"
+            >
               <span>
                 {partida.cantidad}× {partida.descripcion}
               </span>
-              <span>
+              <span className="flex items-center gap-2">
                 {formatearMxn(partida.cantidad * partida.precio_centavos)}
+                {editable && !hayConsumo ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      void quitar(partida.id);
+                    }}
+                    className="text-red-700 underline"
+                  >
+                    Quitar
+                  </button>
+                ) : null}
               </span>
             </li>
           ))}
         </ul>
+        {editable ? (
+          mostrarForm ? (
+            <form
+              onSubmit={(e) => void agregar(e)}
+              className="mt-4 flex flex-col gap-2 border-t pt-3"
+            >
+              <input
+                className="min-h-12 rounded-xl border px-3"
+                placeholder="Descripción"
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
+                required
+                maxLength={80}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  className="min-h-12 rounded-xl border px-3"
+                  placeholder="Cantidad"
+                  value={cant}
+                  onChange={(e) => setCant(e.target.value)}
+                  inputMode="numeric"
+                  required
+                />
+                <input
+                  className="min-h-12 rounded-xl border px-3"
+                  placeholder="Precio pesos"
+                  value={precio}
+                  onChange={(e) => setPrecio(e.target.value)}
+                  inputMode="decimal"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={busy}
+                className="min-h-12 rounded-xl bg-neutral-900 font-semibold text-white"
+              >
+                Guardar partida
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setMostrarForm(true)}
+              className="mt-3 min-h-12 w-full rounded-xl border font-semibold"
+            >
+              Agregar partida
+            </button>
+          )
+        ) : null}
       </section>
 
       <section className="rounded-2xl bg-white/90 p-4">
@@ -150,6 +282,19 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
 
       {error ? (
         <p className="rounded-2xl bg-red-100 p-3 text-red-800">{error}</p>
+      ) : null}
+
+      {cuenta.estado === "pagada" && !cuenta.cerrada_at ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            void cerrar();
+          }}
+          className="min-h-14 rounded-2xl bg-neutral-900 text-lg font-semibold text-white disabled:opacity-50"
+        >
+          Cerrar mesa
+        </button>
       ) : null}
 
       {cuenta.estado !== "pagada" ? (

@@ -7,8 +7,6 @@ import type { Database } from "@/lib/supabase/types";
 
 type MeseroRow = Database["public"]["Tables"]["meseros"]["Row"];
 
-const BLOQUEO_MS = 5 * 60 * 1000;
-const MAX_INTENTOS = 5;
 const MENSAJE_PIN = "PIN incorrecto";
 
 export async function loginConPin(input: {
@@ -31,29 +29,23 @@ export async function loginConPin(input: {
     throw new HttpError(MENSAJE_PIN, 401);
   }
 
-  if (!mesero.activo) {
-    throw new HttpError("Esta cuenta está desactivada", 403);
+  const { data: reserva, error: errReserva } = await supabase.rpc(
+    "sale_pin_reservar_intento",
+    { p_mesero_id: mesero.id },
+  );
+  if (errReserva) {
+    throw new Error("No se pudo validar el PIN");
   }
-
-  const ahora = Date.now();
-  if (
-    mesero.pin_bloqueado_hasta &&
-    new Date(mesero.pin_bloqueado_hasta).getTime() > ahora
-  ) {
+  if (reserva === "bloqueado") {
     throw new HttpError("Demasiados intentos. Espera unos minutos.", 423);
   }
 
   const ok = verificarPin(input.pin, mesero.pin_hash);
   if (!ok) {
-    const intentos = mesero.pin_intentos_fallidos + 1;
-    const update: Database["public"]["Tables"]["meseros"]["Update"] = {
-      pin_intentos_fallidos: intentos,
-    };
-    if (intentos >= MAX_INTENTOS) {
-      update.pin_bloqueado_hasta = new Date(ahora + BLOQUEO_MS).toISOString();
-      update.pin_intentos_fallidos = 0;
-    }
-    await supabase.from("meseros").update(update).eq("id", mesero.id);
+    throw new HttpError(MENSAJE_PIN, 401);
+  }
+
+  if (!mesero.activo) {
     throw new HttpError(MENSAJE_PIN, 401);
   }
 

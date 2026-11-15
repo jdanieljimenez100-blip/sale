@@ -74,6 +74,13 @@ Si ya lo corriste en remoto, no lo vuelvas a ejecutar.
 Columna `meseros.sesion_version` (int not null default 0). Se incrementa al
 cambiar PIN, rol o activo; el token HMAC lleva `v` y debe coincidir.
 
+## 12) Bloqueo atómico de PIN
+
+`supabase/migrations/20261116_sale_pin_reservar_intento.sql`
+
+RPC `sale_pin_reservar_intento(uuid)` → `'ok' | 'bloqueado'`. Solo
+`service_role`. Se llama antes de verificar el PIN.
+
 ## Verificación
 
 ```sql

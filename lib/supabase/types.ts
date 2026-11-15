@@ -308,6 +308,12 @@ export type Database = {
         };
         Returns: Database["public"]["Tables"]["cuentas"]["Row"];
       };
+      sale_pin_reservar_intento: {
+        Args: {
+          p_mesero_id: string;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       estado_cuenta: EstadoCuenta;

@@ -6,7 +6,11 @@ import { getServerEnv } from "@/lib/env";
 import { obtenerCobro } from "@/services/cobros";
 
 const bodySchema = z.object({
-  cobroId: z.string().uuid(),
+  cobroId: z
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+    ),
 });
 
 export async function POST(request: Request): Promise<NextResponse> {

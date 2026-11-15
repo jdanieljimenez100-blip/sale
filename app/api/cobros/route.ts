@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
 import { assertDemoToken } from "@/lib/demo-auth";
+import { uuidSchema } from "@/lib/uuid";
 import { crearCobroApp } from "@/services/cobros";
 
 const bodySchema = z.object({
-  cuentaId: z.string().uuid().optional(),
-  meseroId: z.string().uuid().optional(),
+  cuentaId: uuidSchema.optional(),
+  meseroId: uuidSchema.optional(),
   tipo: z.enum(["consumo", "propina"]),
   montoCentavos: z.number().int().positive(),
   concepto: z.string().min(1).max(120),

@@ -12,8 +12,9 @@
 | `/cobros/[id]/pagado` solo si `estado=pagado` | Committed |
 | Beep con unlock en primer toque | Committed (probar iPhone) |
 | Expirar consumo pendiente al cobrar/dividir | Migración aplicada en remoto |
-| `SUPABASE_SERVICE_ROLE_KEY` en `.env.local` | **Pendiente** (vacía) |
-| Lock RPCs (`20261114_lock_sale_rpcs.sql`) | **Espera SERVICE_ROLE** |
+| `SUPABASE_SERVICE_ROLE_KEY` en `.env.local` | OK (JWT ~219) |
+| Lock RPCs (`20261114_lock_sale_rpcs.sql`) | Aplicado: anon/authenticated sin EXECUTE |
+| Smoke local post-lock (cobrar + Simular) | OK 14 nov 2026 (Mesa 3 → pagado) |
 | Repo público + Vercel | **Pendiente** (falta login gh/vercel) |
 | Pago real $0.01 | **Pendiente** |
 

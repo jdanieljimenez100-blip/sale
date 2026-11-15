@@ -20,9 +20,10 @@
 | Audio en layout + router.push | OK |
 | Repo público + Vercel | OK https://hackaton-five-red.vercel.app (mock) |
 | Env en Vercel | OK (cuentas 200; webhook sin token → 401) |
-| Reset seed Ana/Luis | **Tú: corre `supabase/reset-demo.sql`** (mesas siguen pagadas) |
-| Guion mock en URL pública | **Pendiente** (falta reset + DEMO_ACCESS_TOKEN prod) |
-| Pago real $0.01 | **Pendiente** |
+| Reset seed Ana/Luis | OK (mesas en pendiente) |
+| Guion mock en URL pública | OK Mesa 1 → cobrar → Simular → pagado |
+| webhook sin token | OK → 401 |
+| Pago real $0.01 | **Pendiente** (`PEY_MODE=real` + cuentas pey) |
 
 ## Publicar (manual)
 

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
+import { AvisoPrivacidadSimplificado } from "@/components/AvisoPrivacidadSimplificado";
 
 type PartidaVista = {
   nombre: string;
@@ -150,6 +151,10 @@ export function TicketCliente(props: Props): ReactElement {
         >
           Imprimir / Guardar PDF
         </button>
+
+        <div className="no-print">
+          <AvisoPrivacidadSimplificado />
+        </div>
       </main>
     </>
   );

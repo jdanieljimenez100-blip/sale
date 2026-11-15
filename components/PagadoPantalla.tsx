@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactElement } from "react";
+import { AvisoPrivacidadSimplificado } from "@/components/AvisoPrivacidadSimplificado";
 import { TicketPagadoBloque } from "@/components/TicketPagadoBloque";
 import { Boton } from "@/components/ui/Boton";
 import { Monto } from "@/components/ui/Monto";
@@ -46,6 +47,7 @@ function BloquePagado({
         <circle cx="28" cy="28" r="26" stroke="currentColor" strokeWidth="3" />
         <path
           className="pagado-check"
+          pathLength="1"
           d="M16 29 L24 37 L40 19"
           stroke="currentColor"
           strokeWidth="3.5"
@@ -217,6 +219,10 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
             placeholder="Cuéntanos cómo te fue…"
           />
         </label>
+        <AvisoPrivacidadSimplificado
+          className="mt-3"
+          extra="No escribas datos personales en tu comentario."
+        />
         <Boton
           tamano="lg"
           className="mt-3"

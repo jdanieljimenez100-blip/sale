@@ -5,18 +5,23 @@ import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   type FormEvent,
   type ReactElement,
 } from "react";
+import { useSesion } from "@/components/SesionContext";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { apiFetch } from "@/lib/client-api";
 import { etiquetaEstadoCobro, formatearMxn } from "@/lib/money";
 import type { CobroRow, CuentaConDetalle } from "@/services/cuentas";
+import type { Database } from "@/lib/supabase/types";
 
 type Props = { cuentaId: string };
 type CuentaResponse = { cuenta: CuentaConDetalle };
 type CobrarResponse = { cobro: CobroRow };
+type MenuItem = Database["public"]["Tables"]["menu_items"]["Row"];
+type MenuResponse = { items: MenuItem[] };
 
 function horaCorta(iso: string | null): string {
   if (!iso) {
@@ -31,13 +36,21 @@ function horaCorta(iso: string | null): string {
 
 export function CuentaDetalle({ cuentaId }: Props): ReactElement {
   const router = useRouter();
+  const yo = useSesion();
+  const esAdmin = yo.rol === "admin";
   const [cuenta, setCuenta] = useState<CuentaConDetalle | null>(null);
+  const [menu, setMenu] = useState<MenuItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [categoria, setCategoria] = useState<string>("");
+  const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
+  const [qty, setQty] = useState(1);
+  const [notas, setNotas] = useState("");
+  const [mostrarOtro, setMostrarOtro] = useState(false);
   const [desc, setDesc] = useState("");
   const [cant, setCant] = useState("1");
   const [precio, setPrecio] = useState("");
-  const [mostrarForm, setMostrarForm] = useState(false);
+  const [notasOtro, setNotasOtro] = useState("");
 
   const cargar = useCallback(async (): Promise<void> => {
     try {
@@ -49,13 +62,42 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     }
   }, [cuentaId]);
 
+  const cargarMenu = useCallback(async (): Promise<void> => {
+    try {
+      const data = await apiFetch<MenuResponse>("/api/menu");
+      setMenu(data.items);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo cargar el menú");
+    }
+  }, []);
+
   useEffect(() => {
     void cargar();
+    void cargarMenu();
     const timer = window.setInterval(() => {
       void cargar();
     }, 2000);
     return () => window.clearInterval(timer);
-  }, [cargar]);
+  }, [cargar, cargarMenu]);
+
+  const categorias = useMemo(() => {
+    const set = new Set(menu.map((i) => i.categoria));
+    return [...set];
+  }, [menu]);
+
+  useEffect(() => {
+    if (categorias.length === 0) {
+      return;
+    }
+    if (!categoria || !categorias.includes(categoria)) {
+      setCategoria(categorias[0] ?? "");
+    }
+  }, [categorias, categoria]);
+
+  const itemsCategoria = useMemo(
+    () => menu.filter((i) => i.categoria === categoria),
+    [menu, categoria],
+  );
 
   async function cobrarTotal(): Promise<void> {
     setBusy(true);
@@ -72,24 +114,62 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     }
   }
 
-  async function agregar(event: FormEvent): Promise<void> {
+  function abrirSheet(item: MenuItem): void {
+    setSheetItem(item);
+    setQty(1);
+    setNotas("");
+  }
+
+  async function agregarDelMenu(): Promise<void> {
+    if (!sheetItem) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const data = await apiFetch<CuentaResponse>(
+        `/api/cuentas/${cuentaId}/partidas`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            menuItemId: sheetItem.id,
+            cantidad: qty,
+            notas: notas.trim() || null,
+          }),
+        },
+      );
+      setCuenta(data.cuenta);
+      setSheetItem(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo agregar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function agregarOtro(event: FormEvent): Promise<void> {
     event.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      await apiFetch(`/api/cuentas/${cuentaId}/partidas`, {
-        method: "POST",
-        body: JSON.stringify({
-          descripcion: desc,
-          cantidad: Number.parseInt(cant, 10),
-          precioPesos: precio,
-        }),
-      });
+      const data = await apiFetch<CuentaResponse>(
+        `/api/cuentas/${cuentaId}/partidas`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            descripcion: desc,
+            cantidad: Number.parseInt(cant, 10),
+            precioPesos: precio,
+            notas: notasOtro.trim() || null,
+          }),
+        },
+      );
+      setCuenta(data.cuenta);
       setDesc("");
       setCant("1");
       setPrecio("");
-      setMostrarForm(false);
-      await cargar();
+      setNotasOtro("");
+      setMostrarOtro(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo agregar");
     } finally {
@@ -168,10 +248,125 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
           )}
         </div>
       ) : (
-        <p className="text-4xl font-bold tracking-tight">
+        <p className="text-4xl font-bold tracking-tight tabular-nums">
           Falta por cobrar {formatearMxn(restante)}
         </p>
       )}
+
+      {editable ? (
+        <section className="rounded-2xl bg-white/90 p-4">
+          <h2 className="mb-3 text-lg font-semibold">Menú</h2>
+          {categorias.length === 0 ? (
+            <p className="text-sm text-neutral-600">
+              Aún no hay platillos activos.
+            </p>
+          ) : (
+            <>
+              <div className="mb-3 flex flex-wrap gap-2" role="tablist">
+                {categorias.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    role="tab"
+                    aria-selected={categoria === cat}
+                    onClick={() => setCategoria(cat)}
+                    className={`min-h-12 rounded-xl px-4 font-semibold ${
+                      categoria === cat
+                        ? "bg-neutral-900 text-white"
+                        : "border border-neutral-300 text-neutral-800"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {itemsCategoria.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => abrirSheet(item)}
+                    className="flex min-h-12 flex-col items-start justify-center rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 text-left disabled:opacity-50"
+                  >
+                    <span className="font-semibold leading-tight">
+                      {item.nombre}
+                    </span>
+                    <span className="mt-1 text-sm tabular-nums text-neutral-700">
+                      {formatearMxn(item.precio_centavos)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {esAdmin ? (
+            mostrarOtro ? (
+              <form
+                onSubmit={(e) => void agregarOtro(e)}
+                className="mt-4 flex flex-col gap-2 border-t pt-3"
+              >
+                <p className="text-sm font-medium">Otro (libre)</p>
+                <input
+                  className="min-h-12 rounded-xl border px-3"
+                  placeholder="Descripción"
+                  value={desc}
+                  onChange={(e) => setDesc(e.target.value)}
+                  required
+                  maxLength={80}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    className="min-h-12 rounded-xl border px-3"
+                    placeholder="Cantidad"
+                    value={cant}
+                    onChange={(e) => setCant(e.target.value)}
+                    inputMode="numeric"
+                    required
+                  />
+                  <input
+                    className="min-h-12 rounded-xl border px-3"
+                    placeholder="Precio pesos"
+                    value={precio}
+                    onChange={(e) => setPrecio(e.target.value)}
+                    inputMode="decimal"
+                    required
+                  />
+                </div>
+                <input
+                  className="min-h-12 rounded-xl border px-3"
+                  placeholder="Notas (opcional)"
+                  value={notasOtro}
+                  onChange={(e) => setNotasOtro(e.target.value)}
+                  maxLength={120}
+                />
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="min-h-12 rounded-xl bg-neutral-900 font-semibold text-white"
+                >
+                  Guardar partida
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMostrarOtro(false)}
+                  className="min-h-12 text-sm underline"
+                >
+                  Cancelar
+                </button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setMostrarOtro(true)}
+                className="mt-3 min-h-12 w-full rounded-xl border font-semibold"
+              >
+                Otro
+              </button>
+            )
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="rounded-2xl bg-white/90 p-4">
         <h2 className="mb-3 text-lg font-semibold">Partidas</h2>
@@ -183,8 +378,13 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
             >
               <span>
                 {partida.cantidad}× {partida.descripcion}
+                {partida.notas ? (
+                  <span className="mt-0.5 block text-xs text-neutral-500">
+                    {partida.notas}
+                  </span>
+                ) : null}
               </span>
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 tabular-nums">
                 {formatearMxn(partida.cantidad * partida.precio_centavos)}
                 {editable && !hayConsumo ? (
                   <button
@@ -202,56 +402,9 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
             </li>
           ))}
         </ul>
-        {editable ? (
-          mostrarForm ? (
-            <form
-              onSubmit={(e) => void agregar(e)}
-              className="mt-4 flex flex-col gap-2 border-t pt-3"
-            >
-              <input
-                className="min-h-12 rounded-xl border px-3"
-                placeholder="Descripción"
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-                required
-                maxLength={80}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  className="min-h-12 rounded-xl border px-3"
-                  placeholder="Cantidad"
-                  value={cant}
-                  onChange={(e) => setCant(e.target.value)}
-                  inputMode="numeric"
-                  required
-                />
-                <input
-                  className="min-h-12 rounded-xl border px-3"
-                  placeholder="Precio pesos"
-                  value={precio}
-                  onChange={(e) => setPrecio(e.target.value)}
-                  inputMode="decimal"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={busy}
-                className="min-h-12 rounded-xl bg-neutral-900 font-semibold text-white"
-              >
-                Guardar partida
-              </button>
-            </form>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setMostrarForm(true)}
-              className="mt-3 min-h-12 w-full rounded-xl border font-semibold"
-            >
-              Agregar partida
-            </button>
-          )
-        ) : null}
+        <p className="mt-3 text-right text-lg font-semibold tabular-nums">
+          Total {formatearMxn(cuenta.total_centavos)}
+        </p>
       </section>
 
       <section className="rounded-2xl bg-white/90 p-4">
@@ -317,6 +470,75 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
           >
             Dividir cuenta
           </Link>
+        </div>
+      ) : null}
+
+      {sheetItem ? (
+        <div
+          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sheet-titulo"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-lg">
+            <h3 id="sheet-titulo" className="text-xl font-semibold">
+              {sheetItem.nombre}
+            </h3>
+            <p className="mt-1 tabular-nums text-neutral-700">
+              {formatearMxn(sheetItem.precio_centavos)}
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-4">
+              <button
+                type="button"
+                aria-label="Menos"
+                disabled={qty <= 1 || busy}
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
+                className="flex min-h-12 min-w-12 items-center justify-center rounded-xl border text-2xl font-bold disabled:opacity-40"
+              >
+                −
+              </button>
+              <span className="min-w-8 text-center text-2xl font-semibold tabular-nums">
+                {qty}
+              </span>
+              <button
+                type="button"
+                aria-label="Más"
+                disabled={qty >= 99 || busy}
+                onClick={() => setQty((q) => Math.min(99, q + 1))}
+                className="flex min-h-12 min-w-12 items-center justify-center rounded-xl border text-2xl font-bold disabled:opacity-40"
+              >
+                +
+              </button>
+            </div>
+            <label className="mt-4 flex flex-col gap-1 text-sm">
+              Notas (opcional)
+              <input
+                className="min-h-12 rounded-xl border px-3"
+                value={notas}
+                onChange={(e) => setNotas(e.target.value)}
+                maxLength={120}
+                placeholder="Sin cebolla, poco picante…"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                void agregarDelMenu();
+              }}
+              className="mt-4 min-h-14 w-full rounded-xl bg-neutral-900 text-lg font-semibold text-white disabled:opacity-50"
+            >
+              Agregar
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setSheetItem(null)}
+              className="mt-2 min-h-12 w-full rounded-xl border font-semibold"
+            >
+              Cancelar
+            </button>
+          </div>
         </div>
       ) : null}
     </div>

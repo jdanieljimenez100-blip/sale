@@ -79,42 +79,42 @@ INSERT INTO public.menu_items (
   id, negocio_id, nombre, categoria, precio_centavos, activo, orden
 ) VALUES
   (
-    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa001',
+    'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a101',
     '11111111-1111-1111-1111-111111111111',
     'Taco al pastor', 'Tacos', 1, true, 1
   ),
   (
-    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa002',
+    'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a102',
     '11111111-1111-1111-1111-111111111111',
     'Taco de asada', 'Tacos', 2, true, 2
   ),
   (
-    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa003',
+    'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a103',
     '11111111-1111-1111-1111-111111111111',
     'Taco de suadero', 'Tacos', 2, true, 3
   ),
   (
-    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa004',
+    'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a104',
     '11111111-1111-1111-1111-111111111111',
     'Agua de jamaica', 'Bebidas', 1, true, 1
   ),
   (
-    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa005',
+    'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a105',
     '11111111-1111-1111-1111-111111111111',
     'Refresco', 'Bebidas', 1, true, 2
   ),
   (
-    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa006',
+    'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a106',
     '11111111-1111-1111-1111-111111111111',
     'Cerveza', 'Bebidas', 3, true, 3
   ),
   (
-    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa007',
+    'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a107',
     '11111111-1111-1111-1111-111111111111',
     'Flan', 'Postres', 2, true, 1
   ),
   (
-    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa008',
+    'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a108',
     '11111111-1111-1111-1111-111111111111',
     'Chocoflan', 'Postres', 5, true, 2
   )
@@ -126,11 +126,11 @@ ON CONFLICT (id) DO UPDATE SET
   orden = EXCLUDED.orden;
 
 -- Precios normales (comentado; descomenta y ajusta para demo con montos reales):
--- UPDATE public.menu_items SET precio_centavos = 1800 WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa001'; -- Taco al pastor $18
--- UPDATE public.menu_items SET precio_centavos = 2200 WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa002'; -- Taco de asada $22
--- UPDATE public.menu_items SET precio_centavos = 2200 WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa003'; -- Taco de suadero $22
--- UPDATE public.menu_items SET precio_centavos = 2500 WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa004'; -- Agua de jamaica $25
--- UPDATE public.menu_items SET precio_centavos = 3000 WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa005'; -- Refresco $30
--- UPDATE public.menu_items SET precio_centavos = 4500 WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa006'; -- Cerveza $45
--- UPDATE public.menu_items SET precio_centavos = 3500 WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa007'; -- Flan $35
--- UPDATE public.menu_items SET precio_centavos = 4500 WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa008'; -- Chocoflan $45
+-- UPDATE public.menu_items SET precio_centavos = 1800 WHERE id = 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a101'; -- Taco al pastor $18
+-- UPDATE public.menu_items SET precio_centavos = 2200 WHERE id = 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a102'; -- Taco de asada $22
+-- UPDATE public.menu_items SET precio_centavos = 2200 WHERE id = 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a103'; -- Taco de suadero $22
+-- UPDATE public.menu_items SET precio_centavos = 2500 WHERE id = 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a104'; -- Agua de jamaica $25
+-- UPDATE public.menu_items SET precio_centavos = 3000 WHERE id = 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a105'; -- Refresco $30
+-- UPDATE public.menu_items SET precio_centavos = 4500 WHERE id = 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a106'; -- Cerveza $45
+-- UPDATE public.menu_items SET precio_centavos = 3500 WHERE id = 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a107'; -- Flan $35
+-- UPDATE public.menu_items SET precio_centavos = 4500 WHERE id = 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a108'; -- Chocoflan $45

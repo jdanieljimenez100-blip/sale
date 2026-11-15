@@ -12,6 +12,9 @@ export default function AjustesPage(): ReactElement {
         <p className="mt-2 text-neutral-700">Solo administración</p>
       </header>
       <PropinasAjustes />
+      <Link href="/ajustes/menu" className="min-h-12 text-emerald-900 underline">
+        Menú
+      </Link>
       <Link href="/equipo" className="min-h-12 text-emerald-900 underline">
         Equipo (meseros)
       </Link>

@@ -50,13 +50,24 @@ export async function abrirMesa(input: {
   return data;
 }
 
-export async function agregarPartida(input: {
-  cuentaId: string;
-  descripcion: string;
-  cantidad: number;
-  precioPesos: string;
-  sesion: { meseroId: string; rol: RolSesion };
-}): Promise<CuentaRow> {
+export async function agregarPartida(
+  input:
+    | {
+        cuentaId: string;
+        menuItemId: string;
+        cantidad: number;
+        notas?: string | null;
+        sesion: { meseroId: string; rol: RolSesion };
+      }
+    | {
+        cuentaId: string;
+        descripcion: string;
+        cantidad: number;
+        precioPesos: string;
+        notas?: string | null;
+        sesion: { meseroId: string; rol: RolSesion };
+      },
+): Promise<CuentaRow> {
   const cuenta = await obtenerCuenta(input.cuentaId);
   if (!cuenta) {
     throw new Error("Cuenta no encontrada");
@@ -70,15 +81,25 @@ export async function agregarPartida(input: {
     cerradaAt: cuenta.cerrada_at,
     estado: cuenta.estado,
   });
-  const descripcion = validarDescripcionPartida(input.descripcion);
   const cantidad = validarCantidadPartida(input.cantidad);
-  const precio = pesosTextoACentavos(input.precioPesos);
+  const notas = input.notas?.trim() ? input.notas.trim() : null;
+  if (notas !== null && notas.length > 120) {
+    throw new HttpError("Las notas no pueden pasar de 120 caracteres", 400);
+  }
+
   const supabase = createServiceClient();
+  const esMenu = "menuItemId" in input;
   const { data, error } = await supabase.rpc("sale_agregar_partida", {
     p_cuenta_id: input.cuentaId,
-    p_descripcion: descripcion,
+    p_descripcion: esMenu
+      ? "."
+      : validarDescripcionPartida(input.descripcion),
     p_cantidad: cantidad,
-    p_precio_centavos: precio,
+    p_precio_centavos: esMenu
+      ? 0
+      : pesosTextoACentavos(input.precioPesos),
+    p_notas: notas,
+    p_menu_item_id: esMenu ? input.menuItemId : null,
   });
   if (error || !data) {
     throw new Error(error?.message ?? "No se pudo agregar la partida");

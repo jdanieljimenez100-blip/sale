@@ -1,5 +1,7 @@
+import type { RolSesion } from "@/lib/auth/sesion";
 import { inicioDelDiaMexicoCity } from "@/lib/dia-mexico";
 import { getServerEnv } from "@/lib/env";
+import { puedeModificarMesa } from "@/lib/mesa-reglas";
 import { getPeyClient } from "@/lib/pey";
 import type { PeyWebhookPayload } from "@/lib/pey";
 import { normalizarNumRef } from "@/lib/pey/num-ref";
@@ -226,11 +228,19 @@ export async function expirarConsumoPendiente(cuentaId: string): Promise<number>
   return typeof data === "number" ? data : 0;
 }
 
-export async function cobrarTotalCuenta(cuentaId: string): Promise<CobroRow> {
+export async function cobrarTotalCuenta(
+  cuentaId: string,
+  sesion: { meseroId: string; rol: RolSesion },
+): Promise<CobroRow> {
   const cuenta = await obtenerCuenta(cuentaId);
   if (!cuenta) {
     throw new Error("Cuenta no encontrada");
   }
+  puedeModificarMesa({
+    rol: sesion.rol,
+    sesionMeseroId: sesion.meseroId,
+    cuentaMeseroId: cuenta.mesero_id,
+  });
   const restante = cuenta.total_centavos - cuenta.pagado_consumo_centavos;
   if (restante <= 0) {
     throw new Error("La cuenta ya está cubierta");

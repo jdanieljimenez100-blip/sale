@@ -25,14 +25,14 @@ export async function POST(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    await requireSesion(request);
+    const sesion = await requireSesion(request);
     const { id } = await context.params;
     const json: unknown = await request.json();
     const input = bodySchema.parse(json);
     const cobros =
       input.modo === "igual"
-        ? await dividirCuentaIgual(id, input.partes)
-        : await dividirCuentaPorMontos(id, input.montosCentavos);
+        ? await dividirCuentaIgual(id, input.partes, sesion)
+        : await dividirCuentaPorMontos(id, input.montosCentavos, sesion);
     return NextResponse.json({ cobros });
   } catch (error) {
     return jsonError(error);

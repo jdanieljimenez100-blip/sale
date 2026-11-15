@@ -10,9 +10,9 @@ export async function POST(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    await requireSesion(request);
+    const sesion = await requireSesion(request);
     const { id } = await context.params;
-    const cobro = await cobrarTotalCuenta(id);
+    const cobro = await cobrarTotalCuenta(id, sesion);
     return NextResponse.json({ cobro });
   } catch (error) {
     return jsonError(error);

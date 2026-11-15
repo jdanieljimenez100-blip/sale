@@ -1,15 +1,19 @@
+import type { RolSesion } from "@/lib/auth/sesion";
+import { puedeModificarMesa } from "@/lib/mesa-reglas";
+import type { Database } from "@/lib/supabase/types";
 import { crearCobroApp, expirarConsumoPendiente } from "@/services/cobros";
 import { obtenerCuenta } from "@/services/cuentas";
-import type { Database } from "@/lib/supabase/types";
 import { avanceDivision } from "@/services/dividir-avance";
 
 export { avanceDivision };
 
 type CobroRow = Database["public"]["Tables"]["cobros"]["Row"];
+type SesionMesa = { meseroId: string; rol: RolSesion };
 
 export async function dividirCuentaIgual(
   cuentaId: string,
   partes: number,
+  sesion: SesionMesa,
 ): Promise<CobroRow[]> {
   if (!Number.isInteger(partes) || partes < 2) {
     throw new Error("Se necesitan al menos 2 partes");
@@ -18,6 +22,11 @@ export async function dividirCuentaIgual(
   if (!cuenta) {
     throw new Error("Cuenta no encontrada");
   }
+  puedeModificarMesa({
+    rol: sesion.rol,
+    sesionMeseroId: sesion.meseroId,
+    cuentaMeseroId: cuenta.mesero_id,
+  });
   const restante = cuenta.total_centavos - cuenta.pagado_consumo_centavos;
   if (restante <= 0) {
     throw new Error("Nada por cobrar");
@@ -52,6 +61,7 @@ export async function dividirCuentaIgual(
 export async function dividirCuentaPorMontos(
   cuentaId: string,
   montosCentavos: number[],
+  sesion: SesionMesa,
 ): Promise<CobroRow[]> {
   if (montosCentavos.length < 2) {
     throw new Error("Se necesitan al menos 2 montos");
@@ -63,6 +73,11 @@ export async function dividirCuentaPorMontos(
   if (!cuenta) {
     throw new Error("Cuenta no encontrada");
   }
+  puedeModificarMesa({
+    rol: sesion.rol,
+    sesionMeseroId: sesion.meseroId,
+    cuentaMeseroId: cuenta.mesero_id,
+  });
   const restante = cuenta.total_centavos - cuenta.pagado_consumo_centavos;
   const suma = montosCentavos.reduce((a, b) => a + b, 0);
   if (suma !== restante) {

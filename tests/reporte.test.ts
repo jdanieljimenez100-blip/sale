@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   calcularReporteDesempeno,
+  filtrarReportePorSesion,
   formatearDecimal1,
   formatearPct1,
   ratioONull,
@@ -114,4 +115,75 @@ void test("calcularReporteDesempeno sin datos usa null (UI —)", () => {
   assert.equal(reporte.pctPropinaPromedio, null);
   assert.equal(reporte.estrellasPromedio, null);
   assert.equal(reporte.porMesero.length, 0);
+});
+
+void test("filtrarReportePorSesion mesero solo ve su fila", () => {
+  const completo = calcularReporteDesempeno({
+    rangoDias: 1,
+    desdeIso: "2026-11-14T06:00:00.000Z",
+    repartoCocinaPct: 0,
+    meseros: [
+      { id: "m1", nombre: "Ana" },
+      { id: "m2", nombre: "Luis" },
+    ],
+    cobros: [
+      {
+        id: "c1",
+        mesero_id: "m1",
+        cuenta_id: "u1",
+        tipo: "consumo",
+        monto_centavos: 1000,
+        cobro_origen_id: null,
+        created_at: "2026-11-14T12:00:00.000Z",
+        pagado_at: "2026-11-14T12:01:00.000Z",
+      },
+      {
+        id: "c2",
+        mesero_id: "m2",
+        cuenta_id: "u2",
+        tipo: "consumo",
+        monto_centavos: 500,
+        cobro_origen_id: null,
+        created_at: "2026-11-14T13:00:00.000Z",
+        pagado_at: "2026-11-14T13:01:00.000Z",
+      },
+    ],
+    resenas: [
+      {
+        id: "r1",
+        cobro_id: "c1",
+        mesero_id: "m1",
+        estrellas: 5,
+        comentario: "secreto ana",
+        created_at: "2026-11-14T12:05:00.000Z",
+        mesa: "1",
+      },
+      {
+        id: "r2",
+        cobro_id: "c2",
+        mesero_id: "m2",
+        estrellas: 2,
+        comentario: "secreto luis",
+        created_at: "2026-11-14T13:05:00.000Z",
+        mesa: "3",
+      },
+    ],
+  });
+  assert.equal(completo.porMesero.length, 2);
+  const ana = filtrarReportePorSesion(completo, {
+    meseroId: "m1",
+    rol: "mesero",
+  });
+  assert.equal(ana.porMesero.length, 1);
+  assert.equal(ana.porMesero[0]!.meseroId, "m1");
+  assert.equal(ana.ventasCentavos, 1000);
+  assert.equal(ana.pagosCobrados, 1);
+  assert.equal(ana.porMesero[0]!.ultimasResenas.length, 1);
+  assert.equal(ana.porMesero[0]!.ultimasResenas[0]!.comentario, "secreto ana");
+  const admin = filtrarReportePorSesion(completo, {
+    meseroId: "m1",
+    rol: "admin",
+  });
+  assert.equal(admin.porMesero.length, 2);
+  assert.equal(admin.ventasCentavos, 1500);
 });

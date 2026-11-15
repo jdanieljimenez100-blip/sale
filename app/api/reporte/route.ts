@@ -9,11 +9,11 @@ const rangoSchema = z.enum(["1", "7", "30"]);
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    requireSesion(request);
+    const sesion = requireSesion(request);
     const url = new URL(request.url);
     const raw = url.searchParams.get("dias") ?? "1";
     const dias = Number(rangoSchema.parse(raw)) as RangoReporteDias;
-    const reporte = await obtenerReporteDesempeno(dias);
+    const reporte = await obtenerReporteDesempeno(dias, sesion);
     return NextResponse.json(reporte);
   } catch (error) {
     return jsonError(error);

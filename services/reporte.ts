@@ -2,8 +2,10 @@ import {
   inicioRangoMexicoCity,
   type RangoReporteDias,
 } from "@/lib/dia-mexico";
+import type { RolSesion } from "@/lib/auth/sesion";
 import {
   calcularReporteDesempeno,
+  filtrarReportePorSesion,
   type ReporteDesempeno,
   type ResenaParaReporte,
 } from "@/lib/reporte";
@@ -17,6 +19,7 @@ export type {
 
 export {
   calcularReporteDesempeno,
+  filtrarReportePorSesion,
   formatearDecimal1,
   formatearPct1,
   formatearSegundosPromedio,
@@ -34,6 +37,7 @@ type ResenaSelect = {
 
 export async function obtenerReporteDesempeno(
   rangoDias: RangoReporteDias,
+  sesion: { meseroId: string; rol: RolSesion },
 ): Promise<ReporteDesempeno> {
   const desde = inicioRangoMexicoCity(rangoDias);
   const supabase = createServiceClient();
@@ -102,7 +106,7 @@ export async function obtenerReporteDesempeno(
     mesa: mesaPorCobro.get(r.cobro_id) ?? null,
   }));
 
-  return calcularReporteDesempeno({
+  const completo = calcularReporteDesempeno({
     rangoDias,
     desdeIso: desde.toISOString(),
     cobros: lista,
@@ -110,4 +114,5 @@ export async function obtenerReporteDesempeno(
     meseros: meseros ?? [],
     repartoCocinaPct: negocio?.reparto_cocina_pct ?? 0,
   });
+  return filtrarReportePorSesion(completo, sesion);
 }

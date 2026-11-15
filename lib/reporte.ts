@@ -216,3 +216,27 @@ export function calcularReporteDesempeno(input: {
     porMesero,
   };
 }
+
+/** Filtra el reporte: admin ve todo; mesero solo su fila y totales propios. */
+export function filtrarReportePorSesion(
+  reporte: ReporteDesempeno,
+  sesion: { meseroId: string; rol: "mesero" | "admin" },
+): ReporteDesempeno {
+  if (sesion.rol === "admin") {
+    return reporte;
+  }
+  const porMesero = reporte.porMesero.filter(
+    (m) => m.meseroId === sesion.meseroId,
+  );
+  const propia = porMesero[0];
+  return {
+    ...reporte,
+    porMesero,
+    ventasCentavos: propia?.ventasCentavos ?? 0,
+    propinasCentavos: propia?.propinasCentavos ?? 0,
+    pagosCobrados: propia?.pagosAtendidos ?? 0,
+    ticketPromedioCentavos: propia?.ticketPromedioCentavos ?? null,
+    pctPropinaPromedio: propia?.pctPropinaReal ?? null,
+    estrellasPromedio: propia?.estrellasPromedio ?? null,
+  };
+}

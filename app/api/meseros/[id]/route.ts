@@ -4,7 +4,7 @@ import { jsonError } from "@/lib/api-error";
 import { requireSesion } from "@/lib/auth/require";
 import { peyUlidSchema } from "@/lib/pey-ulid";
 import { uuidSchema } from "@/lib/uuid";
-import { actualizarMeseroAdmin } from "@/services/meseros";
+import { actualizarMeseroAdmin, eliminarMeseroAdmin } from "@/services/meseros";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -34,6 +34,24 @@ export async function PATCH(
       actorMeseroId: sesion.meseroId,
     });
     return NextResponse.json({ mesero });
+  } catch (error) {
+    return jsonError(error);
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  context: Params,
+): Promise<NextResponse> {
+  try {
+    const sesion = await requireSesion(request, { rol: "admin" });
+    const { id } = await context.params;
+    uuidSchema.parse(id);
+    await eliminarMeseroAdmin({
+      meseroId: id,
+      actorMeseroId: sesion.meseroId,
+    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return jsonError(error);
   }

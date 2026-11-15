@@ -51,6 +51,7 @@ crear cobro QR, webhook Standard Webhooks, identificadores de cuenta
 |---|---|---|---|
 | POST | `/api/meseros` | alta mesero | mesero |
 | PATCH | `/api/meseros/[id]` | pin/rol/activo/pey | mesero |
+| DELETE | `/api/meseros/[id]` | — | `{ ok }` | Falla si hay mesas/reseñas o es el último admin |
 | PATCH | `/api/meseros/[id]/cuenta-pey` | `{ peyBankAccountId }` | mesero |
 | POST | `/api/menu` | alta ítem | ítem |
 | PATCH | `/api/menu/[id]` | editar ítem | ítem |

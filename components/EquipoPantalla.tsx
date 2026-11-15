@@ -74,6 +74,25 @@ export function EquipoPantalla(): ReactElement {
     }
   }
 
+  async function eliminar(id: string, nombre: string): Promise<void> {
+    const ok = window.confirm(
+      `¿Eliminar a ${nombre}? Solo si no tiene mesas ni reseñas. Si ya trabajó, usa Desactivar.`,
+    );
+    if (!ok) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/meseros/${id}`, { method: "DELETE" });
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo eliminar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col gap-3" aria-busy="true">
@@ -151,6 +170,16 @@ export function EquipoPantalla(): ReactElement {
                   }}
                 >
                   {m.tieneCuenta ? "Cambiar pey" : "Poner pey"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="pressable min-h-12 rounded-boton border border-peligro/40 px-3 text-[15px] font-semibold text-peligro focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
+                  onClick={() => {
+                    void eliminar(m.id, m.nombre);
+                  }}
+                >
+                  Eliminar
                 </button>
               </div>
             </div>

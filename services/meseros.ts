@@ -204,3 +204,70 @@ export async function actualizarMeseroAdmin(input: {
 
   return aPublico(data);
 }
+
+/**
+ * Elimina un mesero. Falla si es el último admin, si es uno mismo,
+ * o si tiene mesas/reseñas (FK). En ese caso conviene Desactivar.
+ */
+export async function eliminarMeseroAdmin(input: {
+  meseroId: string;
+  actorMeseroId: string;
+}): Promise<void> {
+  if (input.meseroId === input.actorMeseroId) {
+    throw new Error("No puedes eliminarte a ti mismo");
+  }
+  const actual = await obtenerMesero(input.meseroId);
+  if (!actual) {
+    throw new Error("Mesero no encontrado");
+  }
+  if (actual.rol === "admin" && actual.activo) {
+    if ((await contarAdminsActivos()) <= 1) {
+      throw new Error("No puedes eliminar al último admin");
+    }
+  }
+
+  const supabase = createServiceClient();
+  const { count: cuentasCount, error: errCuentas } = await supabase
+    .from("cuentas")
+    .select("id", { count: "exact", head: true })
+    .eq("mesero_id", input.meseroId);
+  if (errCuentas) {
+    throw new Error("No se pudo verificar mesas del mesero");
+  }
+  if ((cuentasCount ?? 0) > 0) {
+    throw new Error(
+      "No se puede eliminar: tiene mesas en el historial. Usa Desactivar.",
+    );
+  }
+
+  const { count: resenasCount, error: errResenas } = await supabase
+    .from("resenas")
+    .select("id", { count: "exact", head: true })
+    .eq("mesero_id", input.meseroId);
+  if (errResenas) {
+    throw new Error("No se pudo verificar reseñas del mesero");
+  }
+  if ((resenasCount ?? 0) > 0) {
+    throw new Error(
+      "No se puede eliminar: tiene reseñas. Usa Desactivar.",
+    );
+  }
+
+  await supabase
+    .from("bitacora")
+    .update({ mesero_id: null })
+    .eq("mesero_id", input.meseroId);
+
+  await registrarBitacora(input.actorMeseroId, "mesero_eliminar", {
+    meseroId: input.meseroId,
+    nombre: actual.nombre,
+  });
+
+  const { error } = await supabase
+    .from("meseros")
+    .delete()
+    .eq("id", input.meseroId);
+  if (error) {
+    throw new Error("No se pudo eliminar el mesero");
+  }
+}

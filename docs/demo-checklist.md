@@ -13,9 +13,12 @@
 | Beep con unlock en primer toque | Committed (probar iPhone) |
 | Expirar consumo pendiente al cobrar/dividir | Migración aplicada en remoto |
 | `SUPABASE_SERVICE_ROLE_KEY` en `.env.local` | OK (JWT ~219) |
-| Lock RPCs (`20261114_lock_sale_rpcs.sql`) | Aplicado: anon/authenticated sin EXECUTE |
-| Smoke local post-lock (cobrar + Simular) | OK 14 nov 2026 (Mesa 3 → pagado) |
-| Repo público + Vercel | **Pendiente** (falta login gh/vercel) |
+| Lock RPCs (`20261115_99_lock_sale_rpcs.sql`) | Aplicado: anon/authenticated sin EXECUTE |
+| Smoke local post-lock (cobrar + Simular) | OK 14 nov 2026 |
+| Seed Ana/Luis + `reset-demo.sql` | En repo — **tú corres** `docs/sql-para-correr.md` |
+| Día CDMX en reporte/propinas | OK |
+| Audio en layout + router.push | OK |
+| Repo público + Vercel | **Bloqueado: sin `gh` ni login Vercel** |
 | Pago real $0.01 | **Pendiente** |
 
 ## Publicar (manual)

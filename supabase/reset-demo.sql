@@ -26,8 +26,8 @@ VALUES
   )
 ON CONFLICT (id) DO UPDATE SET
   nombre = EXCLUDED.nombre,
-  negocio_id = EXCLUDED.negocio_id,
-  pey_bank_account_id = EXCLUDED.pey_bank_account_id;
+  negocio_id = EXCLUDED.negocio_id;
+  -- No tocar pey_bank_account_id: se configura en /equipo y debe sobrevivir el reset.
 
 INSERT INTO public.cuentas (id, negocio_id, mesero_id, mesa, estado, total_centavos) VALUES
   (

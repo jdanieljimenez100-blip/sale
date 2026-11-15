@@ -16,6 +16,7 @@
 | Lock RPCs (`20261115_99_lock_sale_rpcs.sql`) | Aplicado: anon/authenticated sin EXECUTE |
 | Smoke local post-lock (cobrar + Simular) | OK 14 nov 2026 |
 | Seed Ana/Luis + `reset-demo.sql` | En repo — **tú corres** `docs/sql-para-correr.md` |
+| ULID de Ana | Si es la primera vez, pon el ULID de Ana en `/equipo` (el reset no lo borra) |
 | Día CDMX en reporte/propinas | OK |
 | Audio en layout + router.push | OK |
 | Repo público + Vercel | OK https://hackaton-five-red.vercel.app (mock) |

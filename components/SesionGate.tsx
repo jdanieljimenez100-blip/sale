@@ -2,9 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactElement, type ReactNode } from "react";
+import { SesionProvider, type SesionYo } from "@/components/SesionContext";
 import { apiFetch } from "@/lib/client-api";
-
-type Yo = { meseroId: string; nombre: string; rol: "mesero" | "admin" };
 
 export function SesionGate({
   children,
@@ -14,13 +13,13 @@ export function SesionGate({
   rol?: "admin";
 }): ReactElement {
   const router = useRouter();
-  const [yo, setYo] = useState<Yo | null>(null);
+  const [yo, setYo] = useState<SesionYo | null>(null);
   const [listo, setListo] = useState(false);
 
   useEffect(() => {
     void (async () => {
       try {
-        const data = await apiFetch<Yo>("/api/auth/yo");
+        const data = await apiFetch<SesionYo>("/api/auth/yo");
         if (rol === "admin" && data.rol !== "admin") {
           router.replace("/cuentas");
           return;
@@ -37,5 +36,5 @@ export function SesionGate({
   if (!listo || !yo) {
     return <p className="rounded-2xl bg-white/70 p-4">Cargando…</p>;
   }
-  return <>{children}</>;
+  return <SesionProvider yo={yo}>{children}</SesionProvider>;
 }

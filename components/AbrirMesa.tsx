@@ -1,29 +1,55 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent, type ReactElement } from "react";
+import {
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactElement,
+} from "react";
+import { useSesion } from "@/components/SesionContext";
 import { apiFetch } from "@/lib/client-api";
-
-type Yo = { meseroId: string; rol: "mesero" | "admin" };
+import type { MeseroPublico } from "@/lib/meseros-types";
 
 export function AbrirMesa(): ReactElement {
   const router = useRouter();
+  const yo = useSesion();
+  const esAdmin = yo.rol === "admin";
   const [mesa, setMesa] = useState("");
+  const [meseroId, setMeseroId] = useState(yo.meseroId);
+  const [meseros, setMeseros] = useState<MeseroPublico[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [abierto, setAbierto] = useState(false);
+
+  useEffect(() => {
+    if (!abierto || !esAdmin) {
+      return;
+    }
+    void (async () => {
+      try {
+        const data = await apiFetch<{ meseros: MeseroPublico[] }>("/api/meseros");
+        const activos = data.meseros.filter((m) => m.activo);
+        setMeseros(activos);
+        setMeseroId((actual) =>
+          activos.some((m) => m.id === actual) ? actual : yo.meseroId,
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudieron cargar meseros");
+      }
+    })();
+  }, [abierto, esAdmin, yo.meseroId]);
 
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const yo = await apiFetch<Yo>("/api/auth/yo");
       const data = await apiFetch<{ cuenta: { id: string } }>("/api/cuentas/abrir", {
         method: "POST",
         body: JSON.stringify({
           mesa,
-          meseroId: yo.meseroId,
+          meseroId: esAdmin ? meseroId : yo.meseroId,
         }),
       });
       setMesa("");
@@ -63,6 +89,24 @@ export function AbrirMesa(): ReactElement {
           required
         />
       </label>
+      {esAdmin ? (
+        <label className="flex flex-col gap-1 text-sm">
+          Mesero
+          <select
+            className="min-h-12 rounded-xl border px-3"
+            value={meseroId}
+            onChange={(e) => setMeseroId(e.target.value)}
+            required
+          >
+            {meseros.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.nombre}
+                {m.id === yo.meseroId ? " (tú)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <div className="flex gap-2">
         <button
           type="submit"

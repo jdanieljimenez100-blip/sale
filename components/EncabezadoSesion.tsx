@@ -1,24 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactElement } from "react";
+import type { ReactElement } from "react";
+import { useSesion } from "@/components/SesionContext";
 import { apiFetch } from "@/lib/client-api";
-
-type Yo = { meseroId: string; nombre: string; rol: "mesero" | "admin" };
 
 export function EncabezadoSesion(): ReactElement {
   const router = useRouter();
-  const [yo, setYo] = useState<Yo | null>(null);
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        setYo(await apiFetch<Yo>("/api/auth/yo"));
-      } catch {
-        setYo(null);
-      }
-    })();
-  }, []);
+  const yo = useSesion();
+  const esAdmin = yo.rol === "admin";
 
   async function salir(): Promise<void> {
     try {
@@ -29,16 +19,16 @@ export function EncabezadoSesion(): ReactElement {
     router.replace("/entrar");
   }
 
-  if (!yo) {
-    return <div className="min-h-10" />;
-  }
-
   return (
     <div className="flex items-center justify-between gap-2 text-sm">
-      <p className="font-medium text-emerald-900">
-        {yo.nombre}
-        {yo.rol === "admin" ? " · Admin" : ""}
-      </p>
+      <div className="flex items-center gap-2">
+        <p className="font-medium text-emerald-900">{yo.nombre}</p>
+        {esAdmin ? (
+          <span className="rounded-md bg-emerald-800 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+            Admin
+          </span>
+        ) : null}
+      </div>
       <button
         type="button"
         onClick={() => {
@@ -46,7 +36,7 @@ export function EncabezadoSesion(): ReactElement {
         }}
         className="min-h-10 rounded-xl px-3 font-semibold text-neutral-700 underline"
       >
-        Cambiar de mesero
+        {esAdmin ? "Salir" : "Cambiar de mesero"}
       </button>
     </div>
   );

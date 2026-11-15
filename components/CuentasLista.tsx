@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { AbrirMesa } from "@/components/AbrirMesa";
 import { EstadoBadge } from "@/components/EstadoBadge";
+import { useSesion } from "@/components/SesionContext";
 import { apiFetch } from "@/lib/client-api";
 import { formatearMxn } from "@/lib/money";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
@@ -14,21 +15,20 @@ type CuentasResponse = {
   cerradasHoy: CuentaListaItem[];
   resumen: ResumenMesas;
 };
-type Yo = { meseroId: string; rol: "mesero" | "admin" };
 
 export function CuentasLista(): ReactElement {
+  const yo = useSesion();
   const [cuentas, setCuentas] = useState<CuentaListaItem[]>([]);
   const [cerradasHoy, setCerradasHoy] = useState<CuentaListaItem[]>([]);
   const [resumen, setResumen] = useState<ResumenMesas | null>(null);
-  const [filtro, setFiltro] = useState<"todas" | "mias">("mias");
-  const [meseroId, setMeseroId] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<"todas" | "mias">(
+    yo.rol === "admin" ? "todas" : "mias",
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async (): Promise<void> => {
     try {
-      const yo = await apiFetch<Yo>("/api/auth/yo");
-      setMeseroId(yo.meseroId);
       const data = await apiFetch<CuentasResponse>("/api/cuentas");
       setCuentas(data.cuentas);
       setCerradasHoy(data.cerradasHoy ?? []);
@@ -75,8 +75,8 @@ export function CuentasLista(): ReactElement {
 
   const visibles = useMemo(() => {
     const base =
-      filtro === "mias" && meseroId
-        ? cuentas.filter((c) => c.mesero_id === meseroId)
+      filtro === "mias"
+        ? cuentas.filter((c) => c.mesero_id === yo.meseroId)
         : cuentas;
     const abiertas = [...base].sort((a, b) => {
       const rank = (e: string): number =>
@@ -84,11 +84,11 @@ export function CuentasLista(): ReactElement {
       return rank(a.estado) - rank(b.estado) || a.mesa.localeCompare(b.mesa);
     });
     const cerradas =
-      filtro === "mias" && meseroId
-        ? cerradasHoy.filter((c) => c.mesero_id === meseroId)
+      filtro === "mias"
+        ? cerradasHoy.filter((c) => c.mesero_id === yo.meseroId)
         : cerradasHoy;
     return { abiertas, cerradas };
-  }, [cuentas, cerradasHoy, filtro, meseroId]);
+  }, [cuentas, cerradasHoy, filtro, yo.meseroId]);
 
   if (loading) {
     return <p className="rounded-2xl bg-white/70 p-4">Cargando mesas…</p>;

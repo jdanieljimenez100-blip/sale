@@ -4,10 +4,18 @@ import { useCallback, useEffect, useState, type ReactElement } from "react";
 import { apiFetch } from "@/lib/client-api";
 import { formatearMxn } from "@/lib/money";
 
+type PorMesero = {
+  meseroId: string | null;
+  nombre: string;
+  consumoCentavos: number;
+  propinaCentavos: number;
+};
+
 type Reporte = {
   totalConsumoCentavos: number;
   totalPropinaCentavos: number;
   totalCentavos: number;
+  porMesero: PorMesero[];
   cobros: Array<{ id: string; concepto: string; monto_centavos: number; tipo: string }>;
 };
 
@@ -58,6 +66,29 @@ export function ReporteDia(): ReactElement {
           </p>
         </div>
       </div>
+
+      <section className="rounded-2xl bg-white/90 p-4">
+        <h2 className="text-lg font-semibold">Por mesero</h2>
+        {reporte.porMesero.length === 0 ? (
+          <p className="mt-2 text-neutral-600">Sin cobros pagados hoy.</p>
+        ) : (
+          <ul className="mt-3 flex flex-col gap-2">
+            {reporte.porMesero.map((m) => (
+              <li
+                key={m.meseroId ?? m.nombre}
+                className="flex min-h-12 flex-col rounded-xl bg-neutral-50 px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between"
+              >
+                <span className="font-medium">{m.nombre}</span>
+                <span>
+                  Consumo {formatearMxn(m.consumoCentavos)} · Propina{" "}
+                  {formatearMxn(m.propinaCentavos)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <ul className="flex flex-col gap-2">
         {reporte.cobros.map((c) => (
           <li

@@ -48,8 +48,10 @@ npx vercel --prod
    - `SUPABASE_SERVICE_ROLE_KEY` (**obligatoria**; solo servidor)
    - `DEMO_ACCESS_TOKEN` (en Vercel usa uno distinto al local: el repo es público)
    - `PEY_MODE=mock` para ensayo sin banco; `real` para $0.01
-   - Si `real`: `PEY_API_KEY`, `PEY_WEBHOOK_SECRET`, `PEY_BANK_ACCOUNT_RESTAURANTE`, `PEY_BANK_ACCOUNT_MESERO`
-     (los `PEY_BANK_ACCOUNT_*` son el ID de pey de la cuenta, tipo ULID, con `codiStatus: ACTIVE`; no la CLABE)
+   - Si `real`: `PEY_API_KEY`, `PEY_WEBHOOK_SECRET`, `PEY_BANK_ACCOUNT_RESTAURANTE`
+     (ULID de la cuenta CoDi ACTIVE del restaurante; no la CLABE)
+   - El ULID de Ana (u otro mesero) se pone en **/equipo**, no en env.
+     Ya no existe `PEY_BANK_ACCOUNT_MESERO`.
    - `PEY_WEBHOOK_SECRET`: acepta con o sin prefijo `whsec_` (la app quita el prefijo si viene)
 2. Con la service role ya puesta, aplica `supabase/migrations/20261114_lock_sale_rpcs.sql`
    (quita a `anon`/`authenticated` el permiso de ejecutar las RPCs `sale_*`).

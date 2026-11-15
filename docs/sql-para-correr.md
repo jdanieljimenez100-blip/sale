@@ -21,6 +21,14 @@ Si no, corre el cuerpo de:
 
 `supabase/migrations/20261115_99_lock_sale_rpcs.sql`
 
+## 3) Ocultar `pey_bank_account_id` a anon (Parte 1)
+
+Corre todo:
+
+`supabase/migrations/20261115_hide_pey_bank_account_columns.sql`
+
+Verifica que Realtime de mesas siga vivo en `/cuentas`.
+
 ## Verificación
 
 ```sql

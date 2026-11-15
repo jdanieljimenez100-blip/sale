@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import Link from "next/link";
 import { CuentasLista } from "@/components/CuentasLista";
 import { DemoTokenBar } from "@/components/DemoTokenBar";
+import { MeseroSelector } from "@/components/MeseroSelector";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ export default function CuentasPage(): ReactElement {
           Mesas abiertas con cobro CoDi. Estados en vivo.
         </p>
       </header>
+      <MeseroSelector />
       <DemoTokenBar />
       <nav className="flex flex-wrap gap-3 text-sm">
         <Link className="underline" href="/propinas">
@@ -25,6 +27,9 @@ export default function CuentasPage(): ReactElement {
         </Link>
         <Link className="underline" href="/cobro-rapido">
           Cobro rápido
+        </Link>
+        <Link className="underline" href="/equipo">
+          Equipo
         </Link>
       </nav>
       <CuentasLista />

@@ -3,12 +3,11 @@
 import { useState, type FormEvent, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/client-api";
+import { leerMeseroDevice } from "@/lib/mesero-device";
 import type { Database } from "@/lib/supabase/types";
 
 type Cobro = Database["public"]["Tables"]["cobros"]["Row"];
 type CrearResponse = { cobro: Cobro };
-
-const MESERO_DEMO = "22222222-2222-2222-2222-222222222222";
 
 export function CobroRapidoForm(): ReactElement {
   const router = useRouter();
@@ -22,12 +21,16 @@ export function CobroRapidoForm(): ReactElement {
     setBusy(true);
     setError(null);
     try {
+      const meseroId = leerMeseroDevice();
+      if (!meseroId) {
+        throw new Error("Elige quién atiende en Mesas antes de cobrar.");
+      }
       const montoCentavos = Number.parseInt(centavos, 10);
       const data = await apiFetch<CrearResponse>("/api/cobros", {
         method: "POST",
         withDemoToken: true,
         body: JSON.stringify({
-          meseroId: MESERO_DEMO,
+          meseroId,
           tipo: "consumo",
           montoCentavos,
           concepto,
@@ -67,7 +70,7 @@ export function CobroRapidoForm(): ReactElement {
         disabled={busy}
         className="min-h-14 rounded-2xl bg-emerald-800 text-lg font-semibold text-white disabled:opacity-50"
       >
-        Generar QR
+        Cobrar
       </button>
     </form>
   );

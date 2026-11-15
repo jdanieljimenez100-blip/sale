@@ -9,8 +9,10 @@ export default function PropinasPage(): ReactElement {
         ← Cuentas
       </Link>
       <header>
-        <h1 className="text-3xl font-semibold">Mis propinas</h1>
-        <p className="mt-2 text-neutral-700">Ana Mesera · actualiza sola.</p>
+        <h1 className="text-3xl font-semibold">Mis propinas — Hoy</h1>
+        <p className="mt-2 text-neutral-700">
+          Del mesero elegido en Mesas (Atiende). Solo hoy (hora CDMX).
+        </p>
       </header>
       <PropinasLista />
     </main>

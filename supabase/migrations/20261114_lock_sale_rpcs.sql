@@ -22,7 +22,8 @@ BEGIN
       AND p.proname IN (
         'sale_insert_cobro',
         'sale_mark_cobro_pagado',
-        'sale_set_cuenta_estado'
+        'sale_set_cuenta_estado',
+        'sale_expire_consumo_pendientes'
       )
   LOOP
     EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon, authenticated', fn);

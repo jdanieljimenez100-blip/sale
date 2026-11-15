@@ -3,6 +3,7 @@ import { getServerEnv } from "@/lib/env";
 import { getPeyClient } from "@/lib/pey";
 import type { PeyWebhookPayload } from "@/lib/pey";
 import { normalizarNumRef } from "@/lib/pey/num-ref";
+import { montoAlRegenerarConsumo } from "@/lib/qr-estado";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database, TipoCobro } from "@/lib/supabase/types";
 import { obtenerCuenta, recalcularEstadoCuenta } from "@/services/cuentas";
@@ -71,8 +72,27 @@ export async function regenerarCobro(cobroId: string): Promise<CobroRow> {
   if (!actual) {
     throw new Error("Cobro no encontrado");
   }
-  if (actual.estado === "pagado") {
-    throw new Error("Ese cobro ya está pagado");
+  if (actual.estado !== "pendiente") {
+    throw new Error("Solo se puede regenerar un QR pendiente");
+  }
+
+  let numRef = "1";
+  let montoCentavos = actual.monto_centavos;
+  if (actual.tipo === "consumo") {
+    if (!actual.cuenta_id) {
+      throw new Error("Cobro de consumo sin mesa");
+    }
+    const cuenta = await obtenerCuenta(actual.cuenta_id);
+    if (!cuenta) {
+      throw new Error("Cuenta no encontrada");
+    }
+    const restante = cuenta.total_centavos - cuenta.pagado_consumo_centavos;
+    montoCentavos = montoAlRegenerarConsumo({
+      estado: actual.estado,
+      montoCentavos: actual.monto_centavos,
+      restanteCentavos: restante,
+    });
+    numRef = cuenta.mesa;
   }
 
   const supabase = createServiceClient();
@@ -80,24 +100,16 @@ export async function regenerarCobro(cobroId: string): Promise<CobroRow> {
     .from("cobros")
     .update({ estado: "expirado" })
     .eq("id", cobroId)
-    .in("estado", ["pendiente", "expirado"]);
+    .eq("estado", "pendiente");
   if (expError) {
     throw new Error("No se pudo reemplazar el QR");
-  }
-
-  let numRef = "1";
-  if (actual.cuenta_id) {
-    const cuenta = await obtenerCuenta(actual.cuenta_id);
-    if (cuenta) {
-      numRef = cuenta.mesa;
-    }
   }
 
   return crearCobroApp({
     cuentaId: actual.cuenta_id ?? undefined,
     meseroId: actual.mesero_id ?? undefined,
     tipo: actual.tipo,
-    montoCentavos: actual.monto_centavos,
+    montoCentavos,
     concepto: actual.concepto,
     numRef,
   });

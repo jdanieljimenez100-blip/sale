@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
 import { QrImage } from "@/components/QrImage";
 import { apiFetch } from "@/lib/client-api";
-import { QR_EXPIRATION_SECONDS, formatearMxn } from "@/lib/money";
+import { formatearMxn } from "@/lib/money";
+import { vistaQrCobro } from "@/lib/qr-estado";
 import { beep } from "@/lib/sonido";
 import type { Database } from "@/lib/supabase/types";
 
@@ -24,7 +25,7 @@ export function CobroPantalla({
   const [negocio, setNegocio] = useState("Sale");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [segundos, setSegundos] = useState(QR_EXPIRATION_SECONDS);
+  const [ahora, setAhora] = useState(() => new Date());
   const redirected = useRef(false);
 
   const cargar = useCallback(async (): Promise<void> => {
@@ -54,21 +55,9 @@ export function CobroPantalla({
   }, [cargar]);
 
   useEffect(() => {
-    if (!cobro) {
-      return;
-    }
-    const tick = (): void => {
-      const created = new Date(cobro.created_at).getTime();
-      const restante = Math.max(
-        0,
-        QR_EXPIRATION_SECONDS - Math.floor((Date.now() - created) / 1000),
-      );
-      setSegundos(restante);
-    };
-    tick();
-    const id = window.setInterval(tick, 1000);
+    const id = window.setInterval(() => setAhora(new Date()), 1000);
     return () => window.clearInterval(id);
-  }, [cobro]);
+  }, []);
 
   async function simularPago(): Promise<void> {
     setBusy(true);
@@ -108,9 +97,11 @@ export function CobroPantalla({
     return <p className="rounded-2xl bg-white/70 p-4">Cargando cobro…</p>;
   }
 
-  const vencido =
-    cobro.estado === "expirado" ||
-    (cobro.estado === "pendiente" && segundos <= 0);
+  const vista = vistaQrCobro({
+    estado: cobro.estado,
+    createdAt: new Date(cobro.created_at),
+    ahora,
+  });
 
   return (
     <div className="flex flex-col gap-5 text-center">
@@ -124,7 +115,26 @@ export function CobroPantalla({
         <p className="mt-3 text-lg text-neutral-800">{negocio}</p>
       </div>
 
-      {vencido ? (
+      {vista.tipo === "reemplazado" ? (
+        <div className="rounded-2xl bg-neutral-100 p-5">
+          <p className="text-xl font-semibold">Este QR fue reemplazado</p>
+          <button
+            type="button"
+            onClick={() => {
+              if (cobro.cuenta_id) {
+                router.push(`/cuentas/${cobro.cuenta_id}`);
+              } else {
+                router.push("/cuentas");
+              }
+            }}
+            className="mt-4 min-h-14 w-full rounded-2xl bg-neutral-900 text-base font-semibold text-white"
+          >
+            Volver a la mesa
+          </button>
+        </div>
+      ) : null}
+
+      {vista.tipo === "vencido" ? (
         <div className="rounded-2xl bg-amber-50 p-5">
           <p className="text-xl font-semibold">Este QR venció</p>
           <button
@@ -138,21 +148,23 @@ export function CobroPantalla({
             Generar otro
           </button>
         </div>
-      ) : (
+      ) : null}
+
+      {vista.tipo === "activo" ? (
         <>
           <QrImage value={cobro.qr_string} label={`QR ${cobro.concepto}`} />
           <p className="text-sm text-neutral-600">
-            Vence en {Math.floor(segundos / 60)}:
-            {String(segundos % 60).padStart(2, "0")}
+            Vence en {Math.floor(vista.segundosRestantes / 60)}:
+            {String(vista.segundosRestantes % 60).padStart(2, "0")}
           </p>
           <p className="text-sm text-neutral-600">
             Esperando pago… Toca la pantalla una vez para activar el sonido.
           </p>
         </>
-      )}
+      ) : null}
 
       {error ? <p className="text-red-700">{error}</p> : null}
-      {permitirSimular && !vencido ? (
+      {permitirSimular && vista.tipo === "activo" ? (
         <button
           type="button"
           disabled={busy}

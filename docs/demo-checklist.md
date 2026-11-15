@@ -19,7 +19,8 @@
 | ULID de Ana | Si es la primera vez, pon el ULID de Ana en `/equipo` (el reset no lo borra) |
 | Día CDMX en reporte/propinas | OK |
 | Audio en layout + router.push | OK |
-| Repo público + Vercel | OK https://hackaton-five-red.vercel.app (mock) |
+| Repo público en GitHub | **PENDIENTE** (tú: crear repo público + push) |
+| Vercel prod | Preview/deploy de prueba: https://hackaton-five-red.vercel.app — redeploy tras push |
 | Env en Vercel | OK (cuentas 200; webhook sin token → 401) |
 | Reset seed Ana/Luis | OK (mesas en pendiente) |
 | Guion mock en URL pública | OK Mesa 1 → cobrar → Simular → pagado |

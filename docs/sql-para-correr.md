@@ -47,6 +47,13 @@ Tabla `resenas` con RLS (sin policies). Una reseña por cobro de consumo.
 
 Columnas `negocios.propina_porcentajes` y `negocios.reparto_cocina_pct`.
 
+## 7) Índice único de propina excluye expiradas
+
+`supabase/migrations/20261116_propina_uidx_excluye_expirado.sql`
+
+Recrea `cobros_propina_origen_uidx` para permitir regenerar el QR de propina
+(`WHERE tipo = 'propina' AND estado <> 'expirado'`).
+
 ## Verificación
 
 ```sql

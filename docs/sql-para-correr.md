@@ -81,6 +81,19 @@ cambiar PIN, rol o activo; el token HMAC lleva `v` y debe coincidir.
 RPC `sale_pin_reservar_intento(uuid)` → `'ok' | 'bloqueado'`. Solo
 `service_role`. Se llama antes de verificar el PIN.
 
+## 13) Menú + partidas con notas
+
+`supabase/migrations/20261117_menu_items.sql`
+
+- Tabla `menu_items` (RLS sin policies).
+- Columnas `partidas.notas` y `partidas.menu_item_id`.
+- Reemplaza `sale_agregar_partida` (args extra `p_notas`, `p_menu_item_id`;
+  si hay menú, snapshot de nombre/precio del platillo activo).
+
+Luego, si aún no tienes el menú demo, corre el bloque de `menu_items` en:
+
+`supabase/seed.sql`
+
 ## Verificación
 
 ```sql

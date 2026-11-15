@@ -114,6 +114,8 @@ export type Database = {
           descripcion: string;
           cantidad: number;
           precio_centavos: number;
+          notas: string | null;
+          menu_item_id: string | null;
         };
         Insert: {
           id?: string;
@@ -121,6 +123,8 @@ export type Database = {
           descripcion: string;
           cantidad: number;
           precio_centavos: number;
+          notas?: string | null;
+          menu_item_id?: string | null;
         };
         Update: {
           id?: string;
@@ -128,6 +132,41 @@ export type Database = {
           descripcion?: string;
           cantidad?: number;
           precio_centavos?: number;
+          notas?: string | null;
+          menu_item_id?: string | null;
+        };
+        Relationships: [];
+      };
+      menu_items: {
+        Row: {
+          id: string;
+          negocio_id: string;
+          nombre: string;
+          categoria: string;
+          precio_centavos: number;
+          activo: boolean;
+          orden: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          negocio_id: string;
+          nombre: string;
+          categoria: string;
+          precio_centavos: number;
+          activo?: boolean;
+          orden?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          negocio_id?: string;
+          nombre?: string;
+          categoria?: string;
+          precio_centavos?: number;
+          activo?: boolean;
+          orden?: number;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -293,6 +332,8 @@ export type Database = {
           p_descripcion: string;
           p_cantidad: number;
           p_precio_centavos: number;
+          p_notas?: string | null;
+          p_menu_item_id?: string | null;
         };
         Returns: Database["public"]["Tables"]["cuentas"]["Row"];
       };

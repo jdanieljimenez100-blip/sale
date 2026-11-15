@@ -1,4 +1,4 @@
-import { crearCobroApp } from "@/services/cobros";
+import { crearCobroApp, expirarConsumoPendiente } from "@/services/cobros";
 import { obtenerCuenta } from "@/services/cuentas";
 import type { Database } from "@/lib/supabase/types";
 import { avanceDivision } from "@/services/dividir-avance";
@@ -22,6 +22,7 @@ export async function dividirCuentaIgual(
   if (restante <= 0) {
     throw new Error("Nada por cobrar");
   }
+  await expirarConsumoPendiente(cuentaId);
 
   const base = Math.floor(restante / partes);
   const sobra = restante - base * partes;
@@ -67,6 +68,7 @@ export async function dividirCuentaPorMontos(
   if (suma !== restante) {
     throw new Error(`La suma debe ser exactamente ${restante} centavos`);
   }
+  await expirarConsumoPendiente(cuentaId);
 
   const cobros: CobroRow[] = [];
   for (let i = 0; i < montosCentavos.length; i += 1) {

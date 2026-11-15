@@ -188,6 +188,12 @@ export type Database = {
         };
         Returns: undefined;
       };
+      sale_expire_consumo_pendientes: {
+        Args: {
+          p_cuenta_id: string;
+        };
+        Returns: number;
+      };
     };
     Enums: {
       estado_cuenta: EstadoCuenta;

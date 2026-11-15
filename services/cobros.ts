@@ -114,6 +114,17 @@ export async function aplicarPagoWebhook(args: {
   return { applied: row.applied, cobroId: row.cobro_id };
 }
 
+export async function expirarConsumoPendiente(cuentaId: string): Promise<number> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase.rpc("sale_expire_consumo_pendientes", {
+    p_cuenta_id: cuentaId,
+  });
+  if (error) {
+    throw new Error(`No se pudieron expirar cobros: ${error.message}`);
+  }
+  return typeof data === "number" ? data : 0;
+}
+
 export async function cobrarTotalCuenta(cuentaId: string): Promise<CobroRow> {
   const cuenta = await obtenerCuenta(cuentaId);
   if (!cuenta) {
@@ -123,6 +134,7 @@ export async function cobrarTotalCuenta(cuentaId: string): Promise<CobroRow> {
   if (restante <= 0) {
     throw new Error("La cuenta ya está cubierta");
   }
+  await expirarConsumoPendiente(cuentaId);
   return crearCobroApp({
     cuentaId,
     meseroId: cuenta.mesero_id,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
-import { assertDemoToken } from "@/lib/demo-auth";
+import { requireSesion } from "@/lib/auth/require";
 import {
   dividirCuentaIgual,
   dividirCuentaPorMontos,
@@ -25,7 +25,7 @@ export async function POST(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    assertDemoToken(request);
+    requireSesion(request);
     const { id } = await context.params;
     const json: unknown = await request.json();
     const input = bodySchema.parse(json);

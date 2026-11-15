@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
-import { assertDemoToken } from "@/lib/demo-auth";
+import { requireSesion } from "@/lib/auth/require";
 import { peyUlidSchema } from "@/lib/pey-ulid";
 import { crearMesero, listarMeserosPublicos } from "@/services/meseros";
 
@@ -10,8 +10,9 @@ const crearSchema = z.object({
   peyBankAccountId: peyUlidSchema.optional(),
 });
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
   try {
+    requireSesion(request);
     const meseros = await listarMeserosPublicos();
     return NextResponse.json({ meseros });
   } catch (error) {
@@ -21,7 +22,7 @@ export async function GET(): Promise<NextResponse> {
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    assertDemoToken(request);
+    requireSesion(request, { rol: "admin" });
     const json: unknown = await request.json();
     const input = crearSchema.parse(json);
     const mesero = await crearMesero({

@@ -29,6 +29,8 @@ type Columna =
   | "estrellasPromedio"
   | "tiempoCobroSegundosPromedio";
 
+type Yo = { meseroId: string; rol: "mesero" | "admin" };
+
 function valorOrden(
   fila: FilaMeseroReporte,
   col: Columna,
@@ -43,6 +45,7 @@ function valorOrden(
 export function ReporteDesempeno(): ReactElement {
   const [dias, setDias] = useState<RangoReporteDias>(1);
   const [reporte, setReporte] = useState<Reporte | null>(null);
+  const [yo, setYo] = useState<Yo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [orden, setOrden] = useState<{ col: Columna; asc: boolean }>({
     col: "ventasCentavos",
@@ -52,9 +55,9 @@ export function ReporteDesempeno(): ReactElement {
 
   const cargar = useCallback(async (rango: RangoReporteDias): Promise<void> => {
     try {
-      const data = await apiFetch<Reporte>(`/api/reporte?dias=${rango}`, {
-        withDemoToken: true,
-      });
+      const sesion = await apiFetch<Yo>("/api/auth/yo");
+      setYo(sesion);
+      const data = await apiFetch<Reporte>(`/api/reporte?dias=${rango}`);
       setReporte(data);
       setError(null);
     } catch (err) {
@@ -76,11 +79,16 @@ export function ReporteDesempeno(): ReactElement {
   if (error) {
     return <p className="rounded-2xl bg-red-100 p-4 text-red-800">{error}</p>;
   }
-  if (!reporte) {
+  if (!reporte || !yo) {
     return <p className="rounded-2xl bg-white/70 p-4">Cargando reporte…</p>;
   }
 
-  const filas = [...reporte.porMesero].sort((a, b) => {
+  const esAdmin = yo.rol === "admin";
+  const porMesero = esAdmin
+    ? reporte.porMesero
+    : reporte.porMesero.filter((m) => m.meseroId === yo.meseroId);
+
+  const filas = [...porMesero].sort((a, b) => {
     const va = valorOrden(a, orden.col);
     const vb = valorOrden(b, orden.col);
     if (typeof va === "string" && typeof vb === "string") {
@@ -98,6 +106,16 @@ export function ReporteDesempeno(): ReactElement {
       <p className="text-xl font-semibold">{valor}</p>
     </div>
   );
+
+  const ventas = esAdmin
+    ? reporte.ventasCentavos
+    : (filas[0]?.ventasCentavos ?? 0);
+  const propinas = esAdmin
+    ? reporte.propinasCentavos
+    : (filas[0]?.propinasCentavos ?? 0);
+  const pagos = esAdmin
+    ? reporte.pagosCobrados
+    : (filas[0]?.pagosAtendidos ?? 0);
 
   return (
     <div className="flex flex-col gap-4">
@@ -126,21 +144,40 @@ export function ReporteDesempeno(): ReactElement {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {tarjeta("Ventas", formatearMxn(reporte.ventasCentavos))}
-        {tarjeta("Propinas", formatearMxn(reporte.propinasCentavos))}
-        {tarjeta("Pagos cobrados", String(reporte.pagosCobrados))}
-        {tarjeta(
-          "Ticket promedio",
-          reporte.ticketPromedioCentavos == null
-            ? "—"
-            : formatearMxn(Math.round(reporte.ticketPromedioCentavos)),
-        )}
-        {tarjeta("% propina promedio", formatearPct1(reporte.pctPropinaPromedio))}
-        {tarjeta("★ promedio", formatearDecimal1(reporte.estrellasPromedio))}
+        {tarjeta("Ventas", formatearMxn(ventas))}
+        {tarjeta("Propinas", formatearMxn(propinas))}
+        {tarjeta("Pagos cobrados", String(pagos))}
+        {esAdmin
+          ? tarjeta(
+              "Ticket promedio",
+              reporte.ticketPromedioCentavos == null
+                ? "—"
+                : formatearMxn(Math.round(reporte.ticketPromedioCentavos)),
+            )
+          : tarjeta(
+              "Ticket promedio",
+              filas[0]?.ticketPromedioCentavos == null
+                ? "—"
+                : formatearMxn(Math.round(filas[0].ticketPromedioCentavos)),
+            )}
+        {esAdmin
+          ? tarjeta(
+              "% propina promedio",
+              formatearPct1(reporte.pctPropinaPromedio),
+            )
+          : tarjeta("% propina", formatearPct1(filas[0]?.pctPropinaReal ?? null))}
+        {esAdmin
+          ? tarjeta("★ promedio", formatearDecimal1(reporte.estrellasPromedio))
+          : tarjeta(
+              "★ promedio",
+              formatearDecimal1(filas[0]?.estrellasPromedio ?? null),
+            )}
       </div>
 
       <section className="rounded-2xl bg-white/90 p-4">
-        <h2 className="text-lg font-semibold">Desempeño por mesero</h2>
+        <h2 className="text-lg font-semibold">
+          {esAdmin ? "Desempeño por mesero" : "Mi desempeño"}
+        </h2>
         {filas.length === 0 ? (
           <p className="mt-2 text-neutral-600">Sin cobros en este periodo.</p>
         ) : (
@@ -218,7 +255,7 @@ export function ReporteDesempeno(): ReactElement {
                     {abierto === m.meseroId ? (
                       <tr>
                         <td colSpan={9} className="bg-neutral-50 px-3 py-3">
-                          {m.cocinaCentavos != null ? (
+                          {m.cocinaCentavos != null && esAdmin ? (
                             <p className="mb-2 text-sm text-neutral-700">
                               Le toca a cocina: {formatearMxn(m.cocinaCentavos)}
                             </p>
@@ -260,7 +297,7 @@ export function ReporteDesempeno(): ReactElement {
             </table>
           </div>
         )}
-        {reporte.repartoCocinaPct > 0 ? (
+        {esAdmin && reporte.repartoCocinaPct > 0 ? (
           <p className="mt-3 text-sm text-neutral-600">
             Sale no mueve dinero: este reparto se paga por fuera.
           </p>

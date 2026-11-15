@@ -1,8 +1,6 @@
 import type { ReactElement } from "react";
-import Link from "next/link";
 import { CuentasLista } from "@/components/CuentasLista";
 import { MeseroChrome } from "@/components/MeseroChrome";
-import { MeseroSelector } from "@/components/MeseroSelector";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +14,6 @@ export default function CuentasPage(): ReactElement {
           Cobro CoDi. Estados en vivo.
         </p>
       </header>
-      <MeseroSelector />
-      <Link href="/ajustes" className="text-sm text-emerald-900 underline">
-        Ajustes del dispositivo
-      </Link>
       <CuentasLista />
     </MeseroChrome>
   );

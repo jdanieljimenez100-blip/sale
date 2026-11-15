@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
-import { assertDemoToken } from "@/lib/demo-auth";
+import { requireSesion } from "@/lib/auth/require";
 import { peyUlidSchema } from "@/lib/pey-ulid";
 import { uuidSchema } from "@/lib/uuid";
 import { actualizarCuentaPeyMesero } from "@/services/meseros";
@@ -17,7 +17,7 @@ export async function PATCH(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    assertDemoToken(request);
+    requireSesion(request, { rol: "admin" });
     const { id } = await context.params;
     uuidSchema.parse(id);
     const json: unknown = await request.json();

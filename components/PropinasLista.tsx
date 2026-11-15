@@ -3,31 +3,24 @@
 import { useCallback, useEffect, useState, type ReactElement } from "react";
 import { apiFetch } from "@/lib/client-api";
 import { formatearMxn } from "@/lib/money";
-import { leerMeseroDevice } from "@/lib/mesero-device";
 import type { Database } from "@/lib/supabase/types";
 
 type Cobro = Database["public"]["Tables"]["cobros"]["Row"];
+type Yo = { meseroId: string; nombre: string; rol: "mesero" | "admin" };
 type Response = { propinas: Cobro[] };
 
 export function PropinasLista(): ReactElement {
   const [propinas, setPropinas] = useState<Cobro[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [meseroId, setMeseroId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMeseroId(leerMeseroDevice());
-  }, []);
+  const [yo, setYo] = useState<Yo | null>(null);
 
   const cargar = useCallback(async (): Promise<void> => {
-    const id = leerMeseroDevice();
-    setMeseroId(id);
-    if (!id) {
-      setPropinas([]);
-      setError("Elige quién atiende en Mesas (selector Atiende).");
-      return;
-    }
     try {
-      const data = await apiFetch<Response>(`/api/meseros/${id}/propinas`);
+      const sesion = await apiFetch<Yo>("/api/auth/yo");
+      setYo(sesion);
+      const data = await apiFetch<Response>(
+        `/api/meseros/${sesion.meseroId}/propinas`,
+      );
       setPropinas(data.propinas);
       setError(null);
     } catch (err) {
@@ -52,12 +45,13 @@ export function PropinasLista(): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-2xl font-semibold">Hoy: {formatearMxn(total)}</p>
-      {!meseroId ? (
+      {yo ? (
+        <p className="text-sm text-neutral-600">Propinas de {yo.nombre}</p>
+      ) : null}
+      {propinas.length === 0 ? (
         <p className="rounded-2xl bg-white/70 p-4">
-          Elige un mesero en Mesas para ver sus propinas.
+          Aún no hay propinas pagadas hoy.
         </p>
-      ) : propinas.length === 0 ? (
-        <p className="rounded-2xl bg-white/70 p-4">Aún no hay propinas pagadas hoy.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {propinas.map((p) => (

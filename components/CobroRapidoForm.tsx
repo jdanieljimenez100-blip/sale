@@ -3,12 +3,12 @@
 import { useState, type FormEvent, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/client-api";
-import { leerMeseroDevice } from "@/lib/mesero-device";
 import { pesosTextoACentavos } from "@/lib/money";
 import type { Database } from "@/lib/supabase/types";
 
 type Cobro = Database["public"]["Tables"]["cobros"]["Row"];
 type CrearResponse = { cobro: Cobro };
+type Yo = { meseroId: string };
 
 export function CobroRapidoForm(): ReactElement {
   const router = useRouter();
@@ -22,19 +22,15 @@ export function CobroRapidoForm(): ReactElement {
     setBusy(true);
     setError(null);
     try {
-      const meseroId = leerMeseroDevice();
-      if (!meseroId) {
-        throw new Error("Elige quién atiende en Mesas o Ajustes.");
-      }
+      const yo = await apiFetch<Yo>("/api/auth/yo");
       const montoCentavos = pesosTextoACentavos(pesos);
       if (montoCentavos <= 0) {
         throw new Error("El monto debe ser mayor a cero");
       }
       const data = await apiFetch<CrearResponse>("/api/cobros", {
         method: "POST",
-        withDemoToken: true,
         body: JSON.stringify({
-          meseroId,
+          meseroId: yo.meseroId,
           tipo: "consumo",
           montoCentavos,
           concepto,

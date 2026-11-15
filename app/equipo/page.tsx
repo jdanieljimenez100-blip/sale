@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default function EquipoPage(): ReactElement {
   return (
-    <MeseroChrome>
+    <MeseroChrome rol="admin">
       <header>
         <p className="text-sm uppercase tracking-[0.2em] text-emerald-800">Sale</p>
         <h1 className="mt-2 text-3xl font-semibold">Equipo</h1>

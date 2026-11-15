@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
-import { assertDemoToken } from "@/lib/demo-auth";
+import { requireSesion } from "@/lib/auth/require";
 import {
   actualizarConfigPropinas,
   obtenerConfigPropinasNegocio,
@@ -14,7 +14,7 @@ const bodySchema = z.object({
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    assertDemoToken(request);
+    requireSesion(request, { rol: "admin" });
     const config = await obtenerConfigPropinasNegocio();
     return NextResponse.json(config);
   } catch (error) {
@@ -24,7 +24,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function PUT(request: Request): Promise<NextResponse> {
   try {
-    assertDemoToken(request);
+    requireSesion(request, { rol: "admin" });
     const json: unknown = await request.json();
     const body = bodySchema.parse(json);
     const config = await actualizarConfigPropinas({

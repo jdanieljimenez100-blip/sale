@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-error";
+import { requireSesion } from "@/lib/auth/require";
 import { obtenerCobro } from "@/services/cobros";
 import { porcentajesPropinaPorCuenta } from "@/services/negocios";
 import { resolverDestinoPropina } from "@/services/propina-destino";
@@ -7,10 +8,11 @@ import { resolverDestinoPropina } from "@/services/propina-destino";
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: Params,
 ): Promise<NextResponse> {
   try {
+    requireSesion(request);
     const { id } = await context.params;
     const cobro = await obtenerCobro(id);
     if (!cobro) {

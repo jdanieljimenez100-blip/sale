@@ -5,23 +5,24 @@ import { useCallback, useEffect, useMemo, useState, type ReactElement } from "re
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { apiFetch } from "@/lib/client-api";
 import { formatearMxn } from "@/lib/money";
-import { leerMeseroDevice } from "@/lib/mesero-device";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
 import type { CuentaListaItem, ResumenMesas } from "@/services/cuentas";
 
 type CuentasResponse = { cuentas: CuentaListaItem[]; resumen: ResumenMesas };
+type Yo = { meseroId: string; rol: "mesero" | "admin" };
 
 export function CuentasLista(): ReactElement {
   const [cuentas, setCuentas] = useState<CuentaListaItem[]>([]);
   const [resumen, setResumen] = useState<ResumenMesas | null>(null);
-  const [filtro, setFiltro] = useState<"todas" | "mias">("todas");
+  const [filtro, setFiltro] = useState<"todas" | "mias">("mias");
   const [meseroId, setMeseroId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async (): Promise<void> => {
     try {
-      setMeseroId(leerMeseroDevice());
+      const yo = await apiFetch<Yo>("/api/auth/yo");
+      setMeseroId(yo.meseroId);
       const data = await apiFetch<CuentasResponse>("/api/cuentas");
       setCuentas(data.cuentas);
       setResumen(data.resumen);

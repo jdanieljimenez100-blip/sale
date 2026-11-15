@@ -15,7 +15,7 @@ export class HttpError extends Error {
 
 function mensajeParaUsuario(error: unknown): string {
   if (error instanceof DemoAuthError) {
-    return "Falta el token de este dispositivo. Ábrelo en Ajustes.";
+    return "Falta el token de este dispositivo.";
   }
   if (error instanceof ZodError) {
     return "Revisa los datos e inténtalo de nuevo.";
@@ -29,7 +29,7 @@ function mensajeParaUsuario(error: unknown): string {
       message,
     )
   ) {
-    return "No se pudo completar. Revisa la conexión o el token en Ajustes.";
+    return "No se pudo completar. Revisa la conexión o vuelve a entrar.";
   }
   if (message.length > 0 && message.length < 160 && !/stack|at\s+/i.test(message)) {
     return message;

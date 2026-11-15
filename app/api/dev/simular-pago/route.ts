@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
-import { assertDemoToken, DEMO_TOKEN_HEADER } from "@/lib/demo-auth";
+import { DEMO_TOKEN_HEADER } from "@/lib/demo-auth";
+import { requireSesion } from "@/lib/auth/require";
 import { getServerEnv } from "@/lib/env";
 import { obtenerCobro } from "@/services/cobros";
 
@@ -15,7 +16,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    assertDemoToken(request);
+    requireSesion(request);
     const env = getServerEnv();
     if (env.PEY_MODE !== "mock") {
       return NextResponse.json(

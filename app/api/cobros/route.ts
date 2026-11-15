@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
-import { assertDemoToken } from "@/lib/demo-auth";
+import { requireSesion } from "@/lib/auth/require";
 import { uuidSchema } from "@/lib/uuid";
 import { crearCobroApp } from "@/services/cobros";
 
@@ -15,7 +15,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    assertDemoToken(request);
+    requireSesion(request);
     const json: unknown = await request.json();
     if (
       typeof json === "object" &&

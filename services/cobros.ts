@@ -113,6 +113,7 @@ export async function regenerarCobro(cobroId: string): Promise<CobroRow> {
     tipo: actual.tipo,
     montoCentavos,
     concepto: actual.concepto,
+    cobroOrigenId: actual.cobro_origen_id ?? undefined,
     numRef,
   });
 }

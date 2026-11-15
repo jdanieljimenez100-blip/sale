@@ -1,9 +1,43 @@
+import { vistaQrCobro } from "@/lib/qr-estado";
+
 export const PROPINA_PORCENTAJES_DEFAULT = [10, 15, 20] as const;
 
 export type DecisionPropina =
   | { tipo: "porcentaje"; porcentaje: number; montoCentavos: number }
   | { tipo: "monto"; montoCentavos: number }
   | { tipo: "ninguna" };
+
+/** Qué hacer con una propina ya ligada al consumo (ignorando expiradas). */
+export type AccionPropinaExistente =
+  | { accion: "crear" }
+  | { accion: "devolver"; cobroId: string }
+  | { accion: "regenerar"; cobroId: string };
+
+export function decidirReusoPropina(input: {
+  existente: {
+    id: string;
+    estado: "pendiente" | "pagado" | "expirado";
+    createdAt: string;
+  } | null;
+  ahora?: Date;
+}): AccionPropinaExistente {
+  const row = input.existente;
+  if (!row || row.estado === "expirado") {
+    return { accion: "crear" };
+  }
+  if (row.estado === "pagado") {
+    return { accion: "devolver", cobroId: row.id };
+  }
+  const vista = vistaQrCobro({
+    estado: "pendiente",
+    createdAt: new Date(row.createdAt),
+    ahora: input.ahora,
+  });
+  if (vista.tipo === "vencido") {
+    return { accion: "regenerar", cobroId: row.id };
+  }
+  return { accion: "devolver", cobroId: row.id };
+}
 
 export function calcularMontoPropinaPorcentaje(
   montoConsumoCentavos: number,

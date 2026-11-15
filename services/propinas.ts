@@ -1,7 +1,10 @@
-import { resolverDecisionPropina } from "@/lib/propina";
+import {
+  decidirReusoPropina,
+  resolverDecisionPropina,
+} from "@/lib/propina";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
-import { crearCobroApp, obtenerCobro } from "@/services/cobros";
+import { crearCobroApp, obtenerCobro, regenerarCobro } from "@/services/cobros";
 import { porcentajesPropinaPorCuenta } from "@/services/negocios";
 import { resolverDestinoPropina } from "@/services/propina-destino";
 
@@ -46,9 +49,25 @@ export async function crearPropinaDesdeConsumo(input: {
     .select("*")
     .eq("tipo", "propina")
     .eq("cobro_origen_id", consumo.id)
+    .neq("estado", "expirado")
     .maybeSingle();
-  if (existente) {
+
+  const reuso = decidirReusoPropina({
+    existente: existente
+      ? {
+          id: existente.id,
+          estado: existente.estado,
+          createdAt: existente.created_at,
+        }
+      : null,
+  });
+
+  if (reuso.accion === "devolver" && existente) {
     return { cobro: existente, yaExistia: true };
+  }
+  if (reuso.accion === "regenerar") {
+    const cobro = await regenerarCobro(reuso.cobroId);
+    return { cobro, yaExistia: false };
   }
 
   const destino = await resolverDestinoPropina({

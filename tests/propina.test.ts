@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   calcularMontoPropinaPorcentaje,
+  decidirReusoPropina,
   resolverDecisionPropina,
 } from "../lib/propina";
 
@@ -48,5 +49,61 @@ void test("resolverDecisionPropina ninguna", () => {
       ninguna: true,
     }),
     { tipo: "ninguna" },
+  );
+});
+
+void test("decidirReusoPropina crea si no hay o está expirada", () => {
+  assert.deepEqual(decidirReusoPropina({ existente: null }), {
+    accion: "crear",
+  });
+  assert.deepEqual(
+    decidirReusoPropina({
+      existente: {
+        id: "p1",
+        estado: "expirado",
+        createdAt: "2026-11-14T12:00:00.000Z",
+      },
+    }),
+    { accion: "crear" },
+  );
+});
+
+void test("decidirReusoPropina devuelve pagada o pendiente fresca", () => {
+  assert.deepEqual(
+    decidirReusoPropina({
+      existente: {
+        id: "p2",
+        estado: "pagado",
+        createdAt: "2026-11-14T12:00:00.000Z",
+      },
+    }),
+    { accion: "devolver", cobroId: "p2" },
+  );
+  const ahora = new Date("2026-11-14T12:05:00.000Z");
+  assert.deepEqual(
+    decidirReusoPropina({
+      existente: {
+        id: "p3",
+        estado: "pendiente",
+        createdAt: "2026-11-14T12:00:00.000Z",
+      },
+      ahora,
+    }),
+    { accion: "devolver", cobroId: "p3" },
+  );
+});
+
+void test("decidirReusoPropina regenera pendiente vencida (600 s)", () => {
+  const ahora = new Date("2026-11-14T12:10:00.000Z");
+  assert.deepEqual(
+    decidirReusoPropina({
+      existente: {
+        id: "p4",
+        estado: "pendiente",
+        createdAt: "2026-11-14T12:00:00.000Z",
+      },
+      ahora,
+    }),
+    { accion: "regenerar", cobroId: "p4" },
   );
 });

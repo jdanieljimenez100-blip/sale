@@ -20,7 +20,11 @@ function leerCookie(request: Request, nombre: string): string | null {
     }
     const key = parte.slice(0, idx).trim();
     if (key === nombre) {
-      return decodeURIComponent(parte.slice(idx + 1).trim());
+      try {
+        return decodeURIComponent(parte.slice(idx + 1).trim());
+      } catch {
+        return null;
+      }
     }
   }
   return null;

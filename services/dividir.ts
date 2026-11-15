@@ -41,7 +41,7 @@ export async function dividirCuentaIgual(
       meseroId: cuenta.mesero_id,
       tipo: "consumo",
       montoCentavos: monto,
-      concepto: `Mesa ${cuenta.mesa} — parte ${i + 1} de ${montos.length}`,
+      concepto: `Persona ${i + 1} · Mesa ${cuenta.mesa}`,
       numRef: cuenta.mesa,
     });
     cobros.push(cobro);
@@ -66,7 +66,7 @@ export async function dividirCuentaPorMontos(
   const restante = cuenta.total_centavos - cuenta.pagado_consumo_centavos;
   const suma = montosCentavos.reduce((a, b) => a + b, 0);
   if (suma !== restante) {
-    throw new Error(`La suma debe ser exactamente ${restante} centavos`);
+    throw new Error("La suma de los montos debe cubrir exactamente lo que falta");
   }
   await expirarConsumoPendiente(cuentaId);
 
@@ -81,7 +81,7 @@ export async function dividirCuentaPorMontos(
       meseroId: cuenta.mesero_id,
       tipo: "consumo",
       montoCentavos: monto,
-      concepto: `Mesa ${cuenta.mesa} — parte ${i + 1} de ${montosCentavos.length}`,
+      concepto: `Persona ${i + 1} · Mesa ${cuenta.mesa}`,
       numRef: cuenta.mesa,
     });
     cobros.push(cobro);

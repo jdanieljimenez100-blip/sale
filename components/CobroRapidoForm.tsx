@@ -4,6 +4,7 @@ import { useState, type FormEvent, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/client-api";
 import { leerMeseroDevice } from "@/lib/mesero-device";
+import { pesosTextoACentavos } from "@/lib/money";
 import type { Database } from "@/lib/supabase/types";
 
 type Cobro = Database["public"]["Tables"]["cobros"]["Row"];
@@ -11,7 +12,7 @@ type CrearResponse = { cobro: Cobro };
 
 export function CobroRapidoForm(): ReactElement {
   const router = useRouter();
-  const [centavos, setCentavos] = useState("1");
+  const [pesos, setPesos] = useState("0.01");
   const [concepto, setConcepto] = useState("Cobro rápido");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -23,9 +24,12 @@ export function CobroRapidoForm(): ReactElement {
     try {
       const meseroId = leerMeseroDevice();
       if (!meseroId) {
-        throw new Error("Elige quién atiende en Mesas antes de cobrar.");
+        throw new Error("Elige quién atiende en Mesas o Ajustes.");
       }
-      const montoCentavos = Number.parseInt(centavos, 10);
+      const montoCentavos = pesosTextoACentavos(pesos);
+      if (montoCentavos <= 0) {
+        throw new Error("El monto debe ser mayor a cero");
+      }
       const data = await apiFetch<CrearResponse>("/api/cobros", {
         method: "POST",
         withDemoToken: true,
@@ -46,12 +50,13 @@ export function CobroRapidoForm(): ReactElement {
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="flex flex-col gap-4">
       <label className="flex flex-col gap-2 text-sm">
-        Monto en centavos
+        Monto en pesos
         <input
           className="min-h-14 rounded-2xl border px-4 text-lg"
-          value={centavos}
-          onChange={(e) => setCentavos(e.target.value)}
-          inputMode="numeric"
+          value={pesos}
+          onChange={(e) => setPesos(e.target.value)}
+          inputMode="decimal"
+          placeholder="0.01"
           required
         />
       </label>

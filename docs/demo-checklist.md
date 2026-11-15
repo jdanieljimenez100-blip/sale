@@ -59,19 +59,17 @@ npx vercel --prod
 4. En portal.mipey.mx, webhook: `https://<tu-app>/api/webhooks/pey`
 5. Ensayo: Cobrar total → Dividir no debe dejar QR fantasma (quedan `expirado`).
 
-## Guion (mock)
+## Guion (mock) — ensayo
 
-1. Abre `/cuentas` → ves 3 mesas.
-2. Entra a Mesa 1 → Cobrar total → QR.
-3. Toca la pantalla una vez (activa audio) → pulsa **Simular pago**.
-4. Pantalla verde **Pagado** + beep.
-5. Elige propina 10% → segundo QR → Simular pago.
-6. `/propinas` muestra la propina.
-7. Mesa 2 → Dividir en 2 → paga cada QR.
-8. (Escena) Cobrar total y luego Dividir: el QR anterior queda expirado; avance solo cuenta activos.
-9. `/cobro-rapido` con 1 centavo.
-10. `/reporte` suma el día.
-11. `curl` sin token a `/api/webhooks/pey` → error (no 200 applied).
+1. `/ajustes` → guarda token + elige **Atiende: Ana**.
+2. Mesas → Mesa 1 Ana → Cobrar total → QR (sin barra de token).
+3. Toca pantalla → **Simular pago** → Pagado + beep.
+4. Propina 10% · $X → “Va directo a Ana” → Simular → ¡Gracias! → Mesas.
+5. Atiende: Luis → Mesa 3 → Cobrar → propina → “Luis no tiene cuenta: va al restaurante”.
+6. Mesa 2 → Dividir 4 → preview → crear QR → barra “N de 4 pagaron”.
+7. Cobro rápido en pesos (0.01).
+8. Reporte → desglose por mesero.
+9. Webhook sin token → 401.
 
 ## Guion (real, $0.01)
 

@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactElement } from "react";
 import { apiFetch } from "@/lib/client-api";
-import { formatearMxn } from "@/lib/money";
+import { formatearMxn, pesosTextoACentavos } from "@/lib/money";
 import type { Database } from "@/lib/supabase/types";
 
 type Cobro = Database["public"]["Tables"]["cobros"]["Row"];
@@ -24,7 +23,7 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
   const [cobro, setCobro] = useState<Cobro | null>(null);
   const [propinaInfo, setPropinaInfo] = useState<PropinaInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [otra, setOtra] = useState("1");
+  const [otra, setOtra] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -77,6 +76,24 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
     return <p className="rounded-2xl bg-white/70 p-4">Confirmando pago…</p>;
   }
 
+  if (cobro.tipo === "propina") {
+    return (
+      <div className="flex flex-col gap-6 text-center">
+        <div className="rounded-3xl bg-emerald-600 px-6 py-16 text-white shadow-lg">
+          <h1 className="text-5xl font-bold">¡Gracias!</h1>
+          <p className="mt-4 text-2xl">{formatearMxn(cobro.monto_centavos)}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push("/cuentas")}
+          className="min-h-14 rounded-2xl bg-neutral-900 text-lg font-semibold text-white"
+        >
+          Volver a Mesas
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6 text-center">
       <div className="rounded-3xl bg-emerald-600 px-6 py-16 text-white shadow-lg">
@@ -85,69 +102,68 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
         <p className="mt-4 text-2xl">{formatearMxn(cobro.monto_centavos)}</p>
       </div>
 
-      {cobro.tipo === "consumo" ? (
-        <section className="rounded-2xl bg-white/90 p-4 text-left">
-          <h2 className="text-xl font-semibold">¿Propina para el mesero?</h2>
-          {propinaInfo ? (
-            <p className="mt-1 text-sm text-neutral-700">{propinaInfo.mensaje}</p>
-          ) : null}
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {PCTS.map((pct) => {
-              const monto = Math.max(
-                1,
-                Math.round((cobro.monto_centavos * pct) / 100),
-              );
-              return (
-                <button
-                  key={pct}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    void crearPropina(monto);
-                  }}
-                  className="min-h-14 rounded-xl bg-emerald-800 font-semibold text-white disabled:opacity-50"
-                >
-                  {pct}%
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-3 flex gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-sm">
-              Otra (centavos)
-              <input
-                className="min-h-12 rounded-xl border px-3"
-                value={otra}
-                onChange={(event) => setOtra(event.target.value)}
-                inputMode="numeric"
-              />
-            </label>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                const monto = Number.parseInt(otra, 10);
-                if (Number.isInteger(monto) && monto > 0) {
+      <section className="rounded-2xl bg-white/90 p-4 text-left">
+        <h2 className="text-xl font-semibold">¿Propina para el mesero?</h2>
+        {propinaInfo ? (
+          <p className="mt-1 text-sm text-neutral-700">{propinaInfo.mensaje}</p>
+        ) : null}
+        <div className="mt-4 grid grid-cols-1 gap-2">
+          {PCTS.map((pct) => {
+            const monto = Math.max(
+              1,
+              Math.round((cobro.monto_centavos * pct) / 100),
+            );
+            return (
+              <button
+                key={pct}
+                type="button"
+                disabled={busy}
+                onClick={() => {
                   void crearPropina(monto);
-                }
-              }}
-              className="min-h-12 self-end rounded-xl bg-neutral-900 px-4 font-semibold text-white"
-            >
-              Cobrar
-            </button>
-          </div>
-          <Link
-            href={cobro.cuenta_id ? `/cuentas/${cobro.cuenta_id}` : "/cuentas"}
-            className="mt-4 inline-flex min-h-12 items-center underline"
-          >
-            Sin propina
-          </Link>
-        </section>
-      ) : (
-        <Link href="/propinas" className="underline">
-          Ver mis propinas
-        </Link>
-      )}
+                }}
+                className="min-h-14 rounded-xl bg-emerald-800 text-base font-semibold text-white disabled:opacity-50"
+              >
+                {pct}% · {formatearMxn(monto)}
+              </button>
+            );
+          })}
+        </div>
+        <label className="mt-4 flex flex-col gap-1 text-sm">
+          Otra cantidad (pesos)
+          <input
+            className="min-h-12 rounded-xl border px-3"
+            value={otra}
+            onChange={(event) => setOtra(event.target.value)}
+            inputMode="decimal"
+            placeholder="12.50"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            try {
+              const monto = pesosTextoACentavos(otra);
+              if (monto > 0) {
+                void crearPropina(monto);
+              }
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Monto inválido");
+            }
+          }}
+          className="mt-2 min-h-14 w-full rounded-xl bg-neutral-900 font-semibold text-white disabled:opacity-50"
+        >
+          Cobrar otra cantidad
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => router.push("/cuentas")}
+          className="mt-3 min-h-14 w-full rounded-xl border border-neutral-400 font-semibold"
+        >
+          Sin propina
+        </button>
+      </section>
 
       {error ? <p className="text-red-700">{error}</p> : null}
     </div>

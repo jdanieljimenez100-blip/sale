@@ -10,6 +10,7 @@ export default tseslint.config(
       "coverage/**",
       "public/**",
       ".agents/**",
+      "next-env.d.ts",
     ],
   },
   eslint.configs.recommended,

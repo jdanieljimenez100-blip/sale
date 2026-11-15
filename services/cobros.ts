@@ -39,20 +39,15 @@ export async function crearCobroApp(
   });
 
   const supabase = createServiceClient();
-  const { data, error } = await supabase
-    .from("cobros")
-    .insert({
-      cuenta_id: input.cuentaId ?? null,
-      mesero_id: input.meseroId ?? null,
-      tipo: input.tipo,
-      monto_centavos: input.montoCentavos,
-      estado: "pendiente",
-      pey_qr_id: creado.peyQrId,
-      qr_string: creado.qrString,
-      concepto: input.concepto,
-    })
-    .select("*")
-    .single();
+  const { data, error } = await supabase.rpc("sale_insert_cobro", {
+    p_cuenta_id: input.cuentaId ?? null,
+    p_mesero_id: input.meseroId ?? null,
+    p_tipo: input.tipo,
+    p_monto_centavos: input.montoCentavos,
+    p_pey_qr_id: creado.peyQrId,
+    p_qr_string: creado.qrString,
+    p_concepto: input.concepto,
+  });
 
   if (error || !data) {
     throw new Error(`No se pudo guardar el cobro: ${error?.message ?? "sin data"}`);
@@ -78,67 +73,27 @@ export async function aplicarPagoWebhook(args: {
   payload: PeyWebhookPayload;
 }): Promise<{ applied: boolean; cobroId: string | null }> {
   const supabase = createServiceClient();
-
-  const { data: existingEvent } = await supabase
-    .from("cobros")
-    .select("id")
-    .eq("webhook_event_id", args.eventId)
-    .maybeSingle();
-  if (existingEvent) {
-    return { applied: false, cobroId: existingEvent.id };
-  }
-
-  const { data: cobro, error } = await supabase
-    .from("cobros")
-    .select("*")
-    .eq("pey_qr_id", args.payload.codiQrId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("sale_mark_cobro_pagado", {
+    p_pey_qr_id: args.payload.codiQrId,
+    p_event_id: args.eventId,
+    p_transaction_id: args.payload.transactionId,
+    p_pagado_at: new Date(args.payload.datePaid * 1000).toISOString(),
+  });
 
   if (error) {
-    throw new Error(`Error buscando cobro: ${error.message}`);
-  }
-  if (!cobro) {
-    // En mock el id local es peyQrId; en real el webhook usa codiQrId de Banxico.
-    // Intentamos también por coincidencia exacta ya hecha; si no hay, no inventamos.
-    throw new Error(`Cobro no encontrado para pey_qr_id=${args.payload.codiQrId}`);
+    throw new Error(`No se pudo aplicar webhook: ${error.message}`);
   }
 
-  if (cobro.estado === "pagado") {
-    const { error: touchError } = await supabase
-      .from("cobros")
-      .update({ webhook_event_id: args.eventId })
-      .eq("id", cobro.id)
-      .is("webhook_event_id", null);
-    if (touchError) {
-      // Unique conflict = already processed
-      return { applied: false, cobroId: cobro.id };
-    }
-    return { applied: false, cobroId: cobro.id };
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    throw new Error("RPC sale_mark_cobro_pagado sin resultado");
   }
 
-  const { error: updateError } = await supabase
-    .from("cobros")
-    .update({
-      estado: "pagado",
-      pey_transaction_id: args.payload.transactionId,
-      webhook_event_id: args.eventId,
-      pagado_at: new Date(args.payload.datePaid * 1000).toISOString(),
-    })
-    .eq("id", cobro.id)
-    .eq("estado", "pendiente");
-
-  if (updateError) {
-    if (updateError.code === "23505") {
-      return { applied: false, cobroId: cobro.id };
-    }
-    throw new Error(`No se pudo marcar pagado: ${updateError.message}`);
+  if (row.applied && row.cuenta_id && row.tipo === "consumo") {
+    await recalcularEstadoCuenta(row.cuenta_id);
   }
 
-  if (cobro.cuenta_id && cobro.tipo === "consumo") {
-    await recalcularEstadoCuenta(cobro.cuenta_id);
-  }
-
-  return { applied: true, cobroId: cobro.id };
+  return { applied: row.applied, cobroId: row.cobro_id };
 }
 
 export async function cobrarTotalCuenta(cuentaId: string): Promise<CobroRow> {

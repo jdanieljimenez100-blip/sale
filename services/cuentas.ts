@@ -77,10 +77,10 @@ export async function recalcularEstadoCuenta(cuentaId: string): Promise<EstadoCu
     detalle.pagado_consumo_centavos,
   );
   const supabase = createServiceClient();
-  const { error } = await supabase
-    .from("cuentas")
-    .update({ estado })
-    .eq("id", cuentaId);
+  const { error } = await supabase.rpc("sale_set_cuenta_estado", {
+    p_cuenta_id: cuentaId,
+    p_estado: estado,
+  });
   if (error) {
     throw new Error(`No se pudo actualizar estado: ${error.message}`);
   }

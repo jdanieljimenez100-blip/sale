@@ -3,7 +3,7 @@ import { z } from "zod";
 const serverEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   PEY_MODE: z.enum(["mock", "real"]).default("mock"),
   PEY_API_KEY: z.string().optional(),
   PEY_WEBHOOK_SECRET: z.string().optional(),
@@ -16,7 +16,7 @@ export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 let cached: ServerEnv | null = null;
 
-export function getServerEnv(): ServerEnv {
+export function getServerEnvLoose(): ServerEnv {
   if (cached) {
     return cached;
   }
@@ -35,6 +35,10 @@ export function getServerEnv(): ServerEnv {
   }
   cached = parsed.data;
   return cached;
+}
+
+export function getServerEnv(): ServerEnv {
+  return getServerEnvLoose();
 }
 
 export function getPublicSupabaseConfig(): {

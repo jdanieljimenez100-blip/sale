@@ -154,7 +154,41 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      sale_insert_cobro: {
+        Args: {
+          p_cuenta_id: string | null;
+          p_mesero_id: string | null;
+          p_tipo: TipoCobro;
+          p_monto_centavos: number;
+          p_pey_qr_id: string;
+          p_qr_string: string;
+          p_concepto: string;
+        };
+        Returns: Database["public"]["Tables"]["cobros"]["Row"];
+      };
+      sale_mark_cobro_pagado: {
+        Args: {
+          p_pey_qr_id: string;
+          p_event_id: string;
+          p_transaction_id: string;
+          p_pagado_at: string;
+        };
+        Returns: Array<{
+          applied: boolean;
+          cobro_id: string;
+          cuenta_id: string | null;
+          tipo: TipoCobro;
+        }>;
+      };
+      sale_set_cuenta_estado: {
+        Args: {
+          p_cuenta_id: string;
+          p_estado: EstadoCuenta;
+        };
+        Returns: undefined;
+      };
+    };
     Enums: {
       estado_cuenta: EstadoCuenta;
       tipo_cobro: TipoCobro;

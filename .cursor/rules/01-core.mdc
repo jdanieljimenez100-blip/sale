@@ -1,0 +1,20 @@
+---
+description: TypeScript estricto, archivos cortos y lógica fuera de la UI
+alwaysApply: true
+---
+
+# Núcleo
+
+- TypeScript estricto. Sin `any`. Tipos explícitos en funciones públicas.
+- No inventes APIs, campos, endpoints ni firmas. Si no está documentado, deja un TODO y pregunta.
+- Un archivo, una responsabilidad. Menos de 300 líneas; si crece, divídelo.
+- No edites generados: `.next/`, `next-env.d.ts`, `*.generated.*`, migraciones ya aplicadas.
+- No apagues el linter ni los tests (`eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `it.skip`) sin motivo escrito en el mismo sitio.
+- Lógica de negocio, llamadas a datos y validación van en `lib/` o `services/`. Nunca dentro de un componente.
+
+```ts
+// Mal: el botón consulta Supabase y decide si la cuenta está pagada.
+// Bien: el componente llama a services/cuentas.ts y solo pinta el resultado.
+```
+
+- Montos en centavos enteros. Nunca uses flotantes para dinero.

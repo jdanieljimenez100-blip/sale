@@ -1,0 +1,15 @@
+---
+description: Leer spec y plan, tareas chicas y npm run check al cerrar
+alwaysApply: true
+---
+
+# Flujo
+
+- Antes de programar, lee `docs/specs/spec.md` y `docs/specs/plan.md`. Si no están, no inventes alcance.
+- Toma una tarea de `docs/specs/tasks.md`. Orden: datos, servicios, API, pantallas.
+- Un cambio pequeño por vez. No mezcles la configuración del agente con el código de la app.
+- Al terminar, ejecuta `npm run check` (lint, typecheck y test). Si el script no existe o falla, dilo. No lo declares pasado.
+- En el resumen, cita los archivos que leíste y los que modificaste.
+- Si el mismo error ocurre dos veces, propone guardar la corrección como regla `.mdc`.
+- No instales paquetes ni skills sin aprobación.
+- Avanza una fase cuando te lo pidan y espera "OK" antes de la siguiente.

@@ -1,0 +1,18 @@
+---
+description: Next.js App Router, Tailwind mobile-first y español de México
+globs: app/**/*.ts,app/**/*.tsx,components/**/*.ts,components/**/*.tsx
+alwaysApply: false
+---
+
+# Frontend web
+
+- App Router. Server Component por defecto. `"use client"` solo con estado, eventos o APIs del navegador.
+- Tailwind mobile-first: estilos base para el celular; luego `sm:`, `md:` y `lg:`.
+- Componentes pequeños y reutilizables. Sin negocio, sin SQL y sin llamadas a pey.
+- Cada pantalla muestra carga y error. No dejes la UI en blanco si falla la red.
+- Accesibilidad: `label` enlazado, contraste legible, foco visible, área táctil de al menos 44px.
+- Español de México, de tú. Botones con verbo y tamaño grande: "Cobrar", "Dividir cuenta".
+- Estados: pendiente gris, pago parcial amarillo, pagada verde.
+- La acción principal va al alcance del pulgar.
+
+Nada de Capacitor, Expo ni React Native. Si surge, anótalo en `docs/futuro-movil.md`.

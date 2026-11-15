@@ -1,0 +1,14 @@
+---
+description: Secretos de servidor, logs limpios y dependencias de confianza
+alwaysApply: true
+---
+
+# Seguridad
+
+- Secretos solo en variables de entorno del servidor. Una llave, token o secreto de webhook nunca lleva prefijo `NEXT_PUBLIC_`.
+- No subas `.env`, tokens ni `.cursor/mcp.json`. Sí puedes subir `.env.example` y `.cursor/mcp.json.example`, sin valores.
+- El repo será público. Antes de cada commit, revisa el diff: cero secretos.
+- Logs: id de pey, monto en centavos y resultado. Sin CLABE completa, sin tokens y sin el cuerpo crudo del webhook.
+- Cuando exista la app, define headers de seguridad en Next.js y no expongas `X-Powered-By`.
+- Instala dependencias solo desde el registro oficial de npm, con publicador identificable. Confirma que no es un typosquat y espera aprobación.
+- "Pagado" cambia únicamente en el servidor, al aceptar un webhook auténtico.

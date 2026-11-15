@@ -1,0 +1,22 @@
+---
+description: Validar, autorizar y no tragar errores en API y datos
+globs: app/api/**/*.ts,lib/**/*.ts,services/**/*.ts
+alwaysApply: false
+---
+
+# Backend
+
+- Espera o maneja cada promesa. Prohibido dejar promesas flotantes.
+- Prohibido `catch` vacío. Registra el fallo sin datos sensibles y responde un error claro, o relanza.
+- Prohibido armar SQL concatenando texto. Usa el cliente de Supabase o parámetros.
+- Valida con zod antes de usar body, query, headers o el webhook.
+- Cada ruta autoriza. El navegador nunca marca un cobro como pagado.
+- Montos en centavos enteros. Rechaza negativos y valores que no sean enteros.
+- Webhook pey: verificar firma, aplicar una sola vez por ID de pey, luego actualizar la cuenta.
+
+```ts
+const input = cobroSchema.parse(body);
+await assertPuedeCobrar(session, input.cuentaId);
+```
+
+La propina no bloquea el cierre. "Pagada" solo si el consumo confirmado cubre el total.

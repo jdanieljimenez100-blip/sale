@@ -1,3 +1,4 @@
+import { inicioDelDiaMexicoCity } from "@/lib/dia-mexico";
 import { getServerEnv } from "@/lib/env";
 import { getPeyClient } from "@/lib/pey";
 import type { PeyWebhookPayload } from "@/lib/pey";
@@ -147,12 +148,14 @@ export async function cobrarTotalCuenta(cuentaId: string): Promise<CobroRow> {
 
 export async function listarPropinasMesero(meseroId: string): Promise<CobroRow[]> {
   const supabase = createServiceClient();
+  const inicioHoy = inicioDelDiaMexicoCity();
   const { data, error } = await supabase
     .from("cobros")
     .select("*")
     .eq("mesero_id", meseroId)
     .eq("tipo", "propina")
     .eq("estado", "pagado")
+    .gte("pagado_at", inicioHoy.toISOString())
     .order("pagado_at", { ascending: false });
   if (error) {
     throw new Error(`No se pudieron listar propinas: ${error.message}`);

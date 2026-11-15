@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-error";
+import { inicioDelDiaMexicoCity } from "@/lib/dia-mexico";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export async function GET(): Promise<NextResponse> {
   try {
     const supabase = createServiceClient();
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
+    const start = inicioDelDiaMexicoCity();
 
     const { data, error } = await supabase
       .from("cobros")

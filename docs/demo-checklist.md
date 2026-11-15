@@ -63,15 +63,16 @@ npx vercel --prod
 
 ## Guion (mock) — ensayo
 
-1. `/ajustes` → guarda token + elige **Atiende: Ana**.
+1. `/ajustes` → guarda token + elige **Atiende: Ana**. (Opcional: sección Propinas).
 2. Mesas → Mesa 1 Ana → Cobrar total → QR (sin barra de token).
 3. Toca pantalla → **Simular pago** → Pagado + beep.
-4. Propina 10% · $X → “Va directo a Ana” → Simular → ¡Gracias! → Mesas.
-5. Atiende: Luis → Mesa 3 → Cobrar → propina → “Luis no tiene cuenta: va al restaurante”.
-6. Mesa 2 → Dividir 4 → preview → crear QR → barra “N de 4 pagaron”.
-7. Cobro rápido en pesos (0.01).
-8. Reporte → desglose por mesero.
-9. Webhook sin token → 401.
+4. Propina **10%** → “Va directo a Ana” → Simular → ¡Gracias!
+5. Calificación: **5 estrellas** + comentario → Enviar → “¡Gracias por tu opinión!” → Mesas.
+6. Atiende: Luis → Mesa 3 → Cobrar → propina → “Luis no tiene cuenta: va al restaurante”.
+7. Mesa 2 → Dividir 4 → preview → crear QR → barra “N de 4 pagaron”.
+8. Cobro rápido en pesos (0.01).
+9. `/reporte` → Hoy / 7 / 30 → tarjetas + desempeño por mesero (tocar Ana → reseñas).
+10. Webhook sin token → 401.
 
 ## Guion (real, $0.01)
 

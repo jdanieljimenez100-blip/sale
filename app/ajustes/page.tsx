@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DemoTokenBar } from "@/components/DemoTokenBar";
 import { MeseroChrome } from "@/components/MeseroChrome";
 import { MeseroSelector } from "@/components/MeseroSelector";
+import { PropinasAjustes } from "@/components/PropinasAjustes";
 
 export default function AjustesPage(): ReactElement {
   return (
@@ -20,6 +21,7 @@ export default function AjustesPage(): ReactElement {
         </p>
         <DemoTokenBar />
       </section>
+      <PropinasAjustes />
       <Link href="/equipo" className="min-h-12 text-emerald-900 underline">
         Equipo (meseros)
       </Link>

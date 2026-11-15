@@ -1,10 +1,8 @@
-import {
-  PROPINA_PORCENTAJES_DEFAULT,
-  resolverDecisionPropina,
-} from "@/lib/propina";
+import { resolverDecisionPropina } from "@/lib/propina";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { crearCobroApp, obtenerCobro } from "@/services/cobros";
+import { porcentajesPropinaPorCuenta } from "@/services/negocios";
 import { resolverDestinoPropina } from "@/services/propina-destino";
 
 type CobroRow = Database["public"]["Tables"]["cobros"]["Row"];
@@ -12,12 +10,6 @@ type CobroRow = Database["public"]["Tables"]["cobros"]["Row"];
 export type ResultadoPropina =
   | { omitida: true }
   | { cobro: CobroRow; yaExistia: boolean };
-
-function porcentajesDelNegocio(_cuentaId: string | null): number[] {
-  // P4 agrega negocios.propina_porcentajes; hasta entonces usamos el default.
-  void _cuentaId;
-  return [...PROPINA_PORCENTAJES_DEFAULT];
-}
 
 export async function crearPropinaDesdeConsumo(input: {
   cobroConsumoId: string;
@@ -38,7 +30,7 @@ export async function crearPropinaDesdeConsumo(input: {
 
   const decision = resolverDecisionPropina({
     montoConsumoCentavos: consumo.monto_centavos,
-    porcentajesPermitidos: porcentajesDelNegocio(consumo.cuenta_id),
+    porcentajesPermitidos: await porcentajesPropinaPorCuenta(consumo.cuenta_id),
     porcentaje: input.porcentaje,
     montoCentavos: input.montoCentavos,
     ninguna: input.ninguna,

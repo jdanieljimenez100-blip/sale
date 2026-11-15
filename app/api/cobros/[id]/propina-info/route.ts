@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-error";
-import { PROPINA_PORCENTAJES_DEFAULT } from "@/lib/propina";
 import { obtenerCobro } from "@/services/cobros";
+import { porcentajesPropinaPorCuenta } from "@/services/negocios";
 import { resolverDestinoPropina } from "@/services/propina-destino";
 
 type Params = { params: Promise<{ id: string }> };
@@ -20,12 +20,13 @@ export async function GET(
       meseroId: cobro.mesero_id,
       cuentaId: cobro.cuenta_id,
     });
+    const porcentajes = await porcentajesPropinaPorCuenta(cobro.cuenta_id);
     return NextResponse.json({
       mensaje: destino.mensaje,
       meseroNombre: destino.meseroNombre,
       mesa: destino.mesa,
       tieneCuentaMesero: destino.tieneCuentaMesero,
-      porcentajes: [...PROPINA_PORCENTAJES_DEFAULT],
+      porcentajes,
     });
   } catch (error) {
     return jsonError(error);

@@ -6,6 +6,7 @@ import { normalizarNumRef } from "@/lib/pey/num-ref";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database, TipoCobro } from "@/lib/supabase/types";
 import { obtenerCuenta, recalcularEstadoCuenta } from "@/services/cuentas";
+import { resolverDestinoPropina } from "@/services/propina-destino";
 
 type CobroRow = Database["public"]["Tables"]["cobros"]["Row"];
 
@@ -27,12 +28,18 @@ export async function crearCobroApp(
     throw new Error("Monto inválido");
   }
 
-  const env = getServerEnv();
-  const bankAccountId =
-    input.bankAccountId ??
-    (input.tipo === "propina"
-      ? env.PEY_BANK_ACCOUNT_MESERO
-      : env.PEY_BANK_ACCOUNT_RESTAURANTE);
+  let bankAccountId = input.bankAccountId;
+  if (!bankAccountId) {
+    if (input.tipo === "propina") {
+      const destino = await resolverDestinoPropina({
+        meseroId: input.meseroId,
+        cuentaId: input.cuentaId,
+      });
+      bankAccountId = destino.bankAccountId;
+    } else {
+      bankAccountId = getServerEnv().PEY_BANK_ACCOUNT_RESTAURANTE;
+    }
+  }
 
   const pey = getPeyClient();
   const creado = await pey.crearCobro({

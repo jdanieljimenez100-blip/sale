@@ -8,7 +8,6 @@ const serverEnvSchema = z.object({
   PEY_API_KEY: z.string().optional(),
   PEY_WEBHOOK_SECRET: z.string().optional(),
   PEY_BANK_ACCOUNT_RESTAURANTE: z.string().optional(),
-  PEY_BANK_ACCOUNT_MESERO: z.string().optional(),
   DEMO_ACCESS_TOKEN: z.string().min(1),
 });
 

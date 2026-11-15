@@ -10,12 +10,19 @@ import type { Database } from "@/lib/supabase/types";
 type Cobro = Database["public"]["Tables"]["cobros"]["Row"];
 type CobroResponse = { cobro: Cobro };
 type CrearResponse = { cobro: Cobro };
+type PropinaInfo = {
+  mensaje: string;
+  meseroNombre: string;
+  mesa: string | null;
+  tieneCuentaMesero: boolean;
+};
 
 const PCTS = [10, 15, 20] as const;
 
 export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
   const router = useRouter();
   const [cobro, setCobro] = useState<Cobro | null>(null);
+  const [propinaInfo, setPropinaInfo] = useState<PropinaInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [otra, setOtra] = useState("1");
   const [busy, setBusy] = useState(false);
@@ -25,6 +32,12 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
       try {
         const data = await apiFetch<CobroResponse>(`/api/cobros/${cobroId}`);
         setCobro(data.cobro);
+        if (data.cobro.tipo === "consumo") {
+          const info = await apiFetch<PropinaInfo>(
+            `/api/cobros/${cobroId}/propina-info`,
+          );
+          setPropinaInfo(info);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error");
       }
@@ -32,12 +45,13 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
   }, [cobroId]);
 
   async function crearPropina(montoCentavos: number): Promise<void> {
-    if (!cobro) {
+    if (!cobro || !propinaInfo) {
       return;
     }
     setBusy(true);
     setError(null);
     try {
+      const mesa = propinaInfo.mesa ?? "?";
       const data = await apiFetch<CrearResponse>("/api/cobros", {
         method: "POST",
         withDemoToken: true,
@@ -46,7 +60,7 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
           meseroId: cobro.mesero_id ?? undefined,
           tipo: "propina",
           montoCentavos,
-          concepto: `Propina mesa`,
+          concepto: `Propina · Mesa ${mesa} · ${propinaInfo.meseroNombre}`,
         }),
       });
       router.push(`/cobros/${data.cobro.id}`);
@@ -74,9 +88,9 @@ export function PagadoPantalla({ cobroId }: { cobroId: string }): ReactElement {
       {cobro.tipo === "consumo" ? (
         <section className="rounded-2xl bg-white/90 p-4 text-left">
           <h2 className="text-xl font-semibold">¿Propina para el mesero?</h2>
-          <p className="mt-1 text-sm text-neutral-600">
-            Es un segundo cobro. No bloquea el cierre de la cuenta.
-          </p>
+          {propinaInfo ? (
+            <p className="mt-1 text-sm text-neutral-700">{propinaInfo.mensaje}</p>
+          ) : null}
           <div className="mt-4 grid grid-cols-3 gap-2">
             {PCTS.map((pct) => {
               const monto = Math.max(

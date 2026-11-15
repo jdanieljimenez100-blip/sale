@@ -10,7 +10,7 @@ export default function CobroRapidoPage(): ReactElement {
           Cobro rápido
         </h1>
         <p className="mt-1 text-[15px] text-tinta-suave">
-          Sin mesa. Monto en pesos.
+          Sin mesa. Monto libre o suma del menú.
         </p>
       </header>
       <CobroRapidoForm />

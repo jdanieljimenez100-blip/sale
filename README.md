@@ -45,6 +45,14 @@ npm run dev      # http://localhost:3000
 npm run check    # lint + typecheck + test
 ```
 
+## Documentación
+
+- [Aviso de privacidad](/privacidad) (página pública) · [texto integral](docs/legal/aviso-privacidad.md)
+- [Inventario de datos y ARCO](docs/legal/datos-personales.md)
+- Técnica: [arquitectura](docs/tecnica/arquitectura.md) · [modelo de datos](docs/tecnica/modelo-datos.md) · [API](docs/tecnica/api.md) · [despliegue](docs/tecnica/despliegue.md)
+- [Manual de usuario](docs/manual-usuario.md)
+- [Orden de SQL](docs/sql-para-correr.md)
+
 ## Próximamente
 
 - Reportes PDF / Excel

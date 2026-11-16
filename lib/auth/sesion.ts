@@ -8,6 +8,17 @@ export type PayloadSesion = {
   exp: number;
   /** Versión de sesión del mesero (meseros.sesion_version). */
   v: number;
+  /** Negocio activo en la sesión (negocios.id). */
+  n: string;
+};
+
+/** Sesión efectiva tras validar cookie + DB (rol y negocio resueltos). */
+export type SesionAutenticada = {
+  meseroId: string;
+  rol: RolSesion;
+  negocioId: string;
+  exp: number;
+  v: number;
 };
 
 export const COOKIE_SESION = "sale_sesion";
@@ -60,7 +71,8 @@ export function verificarTokenSesion(
     !("meseroId" in parsed) ||
     !("rol" in parsed) ||
     !("exp" in parsed) ||
-    !("v" in parsed)
+    !("v" in parsed) ||
+    !("n" in parsed)
   ) {
     return null;
   }
@@ -69,32 +81,43 @@ export function verificarTokenSesion(
     rol: unknown;
     exp: unknown;
     v: unknown;
+    n: unknown;
   } = parsed;
   if (
     typeof rec.meseroId !== "string" ||
     (rec.rol !== "mesero" && rec.rol !== "admin") ||
     typeof rec.exp !== "number" ||
     typeof rec.v !== "number" ||
-    !Number.isInteger(rec.v)
+    !Number.isInteger(rec.v) ||
+    typeof rec.n !== "string" ||
+    rec.n.length < 1
   ) {
     return null;
   }
   if (ahoraMs >= rec.exp) {
     return null;
   }
-  return { meseroId: rec.meseroId, rol: rec.rol, exp: rec.exp, v: rec.v };
+  return {
+    meseroId: rec.meseroId,
+    rol: rec.rol,
+    exp: rec.exp,
+    v: rec.v,
+    n: rec.n,
+  };
 }
 
 export function payloadSesionNuevo(
   meseroId: string,
   rol: RolSesion,
   sesionVersion: number,
+  negocioId: string,
   ahoraMs: number = Date.now(),
 ): PayloadSesion {
   return {
     meseroId,
     rol,
     v: sesionVersion,
+    n: negocioId,
     exp: ahoraMs + SESION_DURACION_MS,
   };
 }

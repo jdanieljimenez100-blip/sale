@@ -15,6 +15,7 @@ export async function registrarBitacora(
   meseroId: string | null,
   accion: string,
   detalle: Record<string, unknown> = {},
+  negocioId: string | null = null,
 ): Promise<void> {
   try {
     const supabase = createServiceClient();
@@ -22,6 +23,7 @@ export async function registrarBitacora(
       mesero_id: meseroId,
       accion,
       detalle,
+      negocio_id: negocioId,
     });
     if (error) {
       console.error("[bitacora]", accion, error.message);

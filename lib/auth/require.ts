@@ -1,10 +1,11 @@
 import { getServerEnv } from "@/lib/env";
 import { HttpError } from "@/lib/api-error";
+import { resolverAccesoNegocio } from "@/lib/auth/negocio-acceso";
 import {
   COOKIE_SESION,
   verificarTokenSesion,
-  type PayloadSesion,
   type RolSesion,
+  type SesionAutenticada,
 } from "@/lib/auth/sesion";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -67,12 +68,13 @@ export function assertOriginMismoHost(request: Request): void {
 
 /**
  * Verifica cookie HMAC y que el mesero siga activo con la misma
- * sesion_version. El rol efectivo sale de la BASE, no de la cookie.
+ * sesion_version. El rol efectivo sale de la BASE + accesos, no solo
+ * de la cookie. El negocio activo es payload.n si hay acceso.
  */
 export async function requireSesion(
   request: Request,
   opts?: { rol?: RolSesion },
-): Promise<PayloadSesion> {
+): Promise<SesionAutenticada> {
   assertOriginMismoHost(request);
   const token = leerCookie(request, COOKIE_SESION);
   if (!token) {
@@ -85,11 +87,18 @@ export async function requireSesion(
   }
 
   const supabase = createServiceClient();
-  const { data: mesero, error } = await supabase
-    .from("meseros")
-    .select("id, rol, activo, sesion_version")
-    .eq("id", payload.meseroId)
-    .maybeSingle();
+  const [{ data: mesero, error }, { data: accesos, error: errAccesos }] =
+    await Promise.all([
+      supabase
+        .from("meseros")
+        .select("id, rol, activo, sesion_version, negocio_id")
+        .eq("id", payload.meseroId)
+        .maybeSingle(),
+      supabase
+        .from("negocio_accesos")
+        .select("negocio_id, rol")
+        .eq("mesero_id", payload.meseroId),
+    ]);
 
   if (error || !mesero || !mesero.activo) {
     throw new HttpError("Inicia sesión", 401);
@@ -97,10 +106,23 @@ export async function requireSesion(
   if (mesero.sesion_version !== payload.v) {
     throw new HttpError("Inicia sesión", 401);
   }
+  if (errAccesos) {
+    throw new HttpError("Inicia sesión", 401);
+  }
 
-  const efectiva: PayloadSesion = {
+  const acceso = resolverAccesoNegocio({
+    mesero: { negocio_id: mesero.negocio_id, rol: mesero.rol },
+    negocioPedido: payload.n,
+    accesos: accesos ?? [],
+  });
+  if (!acceso) {
+    throw new HttpError("Inicia sesión", 401);
+  }
+
+  const efectiva: SesionAutenticada = {
     meseroId: mesero.id,
-    rol: mesero.rol,
+    rol: acceso.rol,
+    negocioId: acceso.negocioId,
     exp: payload.exp,
     v: mesero.sesion_version,
   };

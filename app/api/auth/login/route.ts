@@ -24,7 +24,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     const body = bodySchema.parse(json);
     const sesion = await loginConPin(body);
     const token = crearTokenSesion(
-      payloadSesionNuevo(sesion.meseroId, sesion.rol, sesion.sesionVersion),
+      payloadSesionNuevo(
+        sesion.meseroId,
+        sesion.rol,
+        sesion.sesionVersion,
+        sesion.negocioId,
+      ),
       getServerEnv().SESSION_SECRET,
     );
     const res = NextResponse.json({

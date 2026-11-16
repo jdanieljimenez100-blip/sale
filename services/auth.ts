@@ -13,11 +13,14 @@ const MENSAJE_PIN = "PIN incorrecto";
 export async function loginConPin(input: {
   meseroId: string;
   pin: string;
+  /** Si se indica, el mesero debe pertenecer a ese negocio. */
+  negocioId?: string;
 }): Promise<{
   meseroId: string;
   rol: RolSesion;
   nombre: string;
   sesionVersion: number;
+  negocioId: string;
 }> {
   const supabase = createServiceClient();
   const { data: mesero, error } = await supabase
@@ -29,6 +32,13 @@ export async function loginConPin(input: {
   if (error || !mesero || !mesero.pin_hash) {
     await registrarBitacora(input.meseroId, "login_fallido", {
       motivo: "mesero_o_pin_ausente",
+    });
+    throw new HttpError(MENSAJE_PIN, 401);
+  }
+
+  if (input.negocioId && mesero.negocio_id !== input.negocioId) {
+    await registrarBitacora(mesero.id, "login_fallido", {
+      motivo: "negocio",
     });
     throw new HttpError(MENSAJE_PIN, 401);
   }
@@ -84,17 +94,28 @@ export async function loginConPin(input: {
     rol: mesero.rol,
     nombre: mesero.nombre,
     sesionVersion: mesero.sesion_version,
+    negocioId: mesero.negocio_id,
   };
 }
 
 export async function obtenerSesionActual(
   meseroId: string,
-): Promise<{ meseroId: string; nombre: string; rol: RolSesion } | null> {
+): Promise<{
+  meseroId: string;
+  nombre: string;
+  rol: RolSesion;
+  negocioId: string;
+} | null> {
   const mesero = await obtenerMeseroAuth(meseroId);
   if (!mesero || !mesero.activo) {
     return null;
   }
-  return { meseroId: mesero.id, nombre: mesero.nombre, rol: mesero.rol };
+  return {
+    meseroId: mesero.id,
+    nombre: mesero.nombre,
+    rol: mesero.rol,
+    negocioId: mesero.negocio_id,
+  };
 }
 
 export async function obtenerMeseroAuth(
@@ -177,4 +198,64 @@ export async function listarMeserosActivosLogin(): Promise<
     throw new Error("No se pudieron listar meseros");
   }
   return data ?? [];
+}
+
+export type NegocioResumen = {
+  id: string;
+  nombre: string;
+  slug: string;
+};
+
+/** Negocio home + accesos admin cruzados. */
+export async function listarNegociosAccesibles(
+  meseroId: string,
+): Promise<NegocioResumen[]> {
+  const supabase = createServiceClient();
+  const { data: mesero, error } = await supabase
+    .from("meseros")
+    .select("negocio_id")
+    .eq("id", meseroId)
+    .maybeSingle();
+  if (error || !mesero) {
+    throw new Error("No se pudo leer mesero");
+  }
+
+  const { data: accesos, error: errAccesos } = await supabase
+    .from("negocio_accesos")
+    .select("negocio_id")
+    .eq("mesero_id", meseroId)
+    .eq("rol", "admin");
+  if (errAccesos) {
+    throw new Error("No se pudieron listar accesos");
+  }
+
+  const ids = new Set<string>([mesero.negocio_id]);
+  for (const a of accesos ?? []) {
+    ids.add(a.negocio_id);
+  }
+
+  const { data: negocios, error: errNeg } = await supabase
+    .from("negocios")
+    .select("id, nombre, slug")
+    .in("id", [...ids])
+    .order("nombre", { ascending: true });
+  if (errNeg) {
+    throw new Error("No se pudieron listar negocios");
+  }
+  return negocios ?? [];
+}
+
+export async function obtenerNegocioPorId(
+  negocioId: string,
+): Promise<NegocioResumen | null> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("negocios")
+    .select("id, nombre, slug")
+    .eq("id", negocioId)
+    .maybeSingle();
+  if (error) {
+    throw new Error("No se pudo leer negocio");
+  }
+  return data;
 }

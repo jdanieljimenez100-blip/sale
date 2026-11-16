@@ -9,6 +9,7 @@ export type Database = {
         Row: {
           id: string;
           nombre: string;
+          slug: string;
           pey_bank_account_id: string | null;
           propina_porcentajes: number[];
           reparto_cocina_pct: number;
@@ -17,6 +18,7 @@ export type Database = {
         Insert: {
           id?: string;
           nombre: string;
+          slug: string;
           pey_bank_account_id?: string | null;
           propina_porcentajes?: number[];
           reparto_cocina_pct?: number;
@@ -25,9 +27,31 @@ export type Database = {
         Update: {
           id?: string;
           nombre?: string;
+          slug?: string;
           pey_bank_account_id?: string | null;
           propina_porcentajes?: number[];
           reparto_cocina_pct?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      negocio_accesos: {
+        Row: {
+          mesero_id: string;
+          negocio_id: string;
+          rol: "admin";
+          created_at: string;
+        };
+        Insert: {
+          mesero_id: string;
+          negocio_id: string;
+          rol: "admin";
+          created_at?: string;
+        };
+        Update: {
+          mesero_id?: string;
+          negocio_id?: string;
+          rol?: "admin";
           created_at?: string;
         };
         Relationships: [];
@@ -193,6 +217,7 @@ export type Database = {
         Row: {
           id: string;
           mesero_id: string | null;
+          negocio_id: string | null;
           accion: string;
           detalle: Record<string, unknown>;
           created_at: string;
@@ -200,6 +225,7 @@ export type Database = {
         Insert: {
           id?: string;
           mesero_id?: string | null;
+          negocio_id?: string | null;
           accion: string;
           detalle?: Record<string, unknown>;
           created_at?: string;
@@ -207,6 +233,7 @@ export type Database = {
         Update: {
           id?: string;
           mesero_id?: string | null;
+          negocio_id?: string | null;
           accion?: string;
           detalle?: Record<string, unknown>;
           created_at?: string;
@@ -248,6 +275,7 @@ export type Database = {
           id: string;
           cuenta_id: string | null;
           mesero_id: string | null;
+          negocio_id: string;
           tipo: TipoCobro;
           monto_centavos: number;
           estado: EstadoCobro;
@@ -264,6 +292,7 @@ export type Database = {
           id?: string;
           cuenta_id?: string | null;
           mesero_id?: string | null;
+          negocio_id: string;
           tipo: TipoCobro;
           monto_centavos: number;
           estado?: EstadoCobro;
@@ -280,6 +309,7 @@ export type Database = {
           id?: string;
           cuenta_id?: string | null;
           mesero_id?: string | null;
+          negocio_id?: string;
           tipo?: TipoCobro;
           monto_centavos?: number;
           estado?: EstadoCobro;

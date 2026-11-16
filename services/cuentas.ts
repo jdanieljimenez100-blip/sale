@@ -14,6 +14,13 @@ export type CuentaConDetalle = CuentaRow & {
   mesero_nombre: string;
 };
 
+export type EntradaCuentaDetalle = {
+  cuenta: CuentaRow;
+  partidas: PartidaRow[];
+  cobros: CobroRow[];
+  meseroNombre: string;
+};
+
 export type CuentaListaItem = CuentaRow & {
   mesero_nombre: string;
   pagado_consumo_centavos: number;
@@ -27,6 +34,23 @@ export type ResumenMesas = {
 };
 
 export { calcularEstadoCuenta };
+
+/** Arma el mismo shape que GET `/api/cuentas/[id]` sin tocar la DB. */
+export function armarCuentaConDetalle(
+  entrada: EntradaCuentaDetalle,
+): CuentaConDetalle {
+  const pagadoConsumo = entrada.cobros
+    .filter((cobro) => cobro.tipo === "consumo" && cobro.estado === "pagado")
+    .reduce((suma, cobro) => suma + cobro.monto_centavos, 0);
+
+  return {
+    ...entrada.cuenta,
+    partidas: entrada.partidas,
+    cobros: entrada.cobros,
+    pagado_consumo_centavos: pagadoConsumo,
+    mesero_nombre: entrada.meseroNombre,
+  };
+}
 
 export async function listarCuentasConResumen(
   negocioId: string,
@@ -154,17 +178,23 @@ export async function obtenerCuenta(
     throw new Error("No se pudo cargar el detalle de la mesa");
   }
 
-  const pagadoConsumo = (cobros ?? [])
-    .filter((cobro) => cobro.tipo === "consumo" && cobro.estado === "pagado")
-    .reduce((suma, cobro) => suma + cobro.monto_centavos, 0);
-
-  return {
-    ...cuenta,
+  return armarCuentaConDetalle({
+    cuenta,
     partidas: partidas ?? [],
     cobros: cobros ?? [],
-    pagado_consumo_centavos: pagadoConsumo,
-    mesero_nombre: mesero?.nombre ?? "Mesero",
-  };
+    meseroNombre: mesero?.nombre ?? "Mesero",
+  });
+}
+
+/** Misma forma que GET `/api/cuentas/[id]` para respuestas post-mutación. */
+export async function respuestaCuentaDetalle(
+  cuentaId: string,
+): Promise<CuentaConDetalle> {
+  const cuenta = await obtenerCuenta(cuentaId);
+  if (!cuenta) {
+    throw new Error("Cuenta no encontrada");
+  }
+  return cuenta;
 }
 
 export async function recalcularEstadoCuenta(cuentaId: string): Promise<EstadoCuenta> {

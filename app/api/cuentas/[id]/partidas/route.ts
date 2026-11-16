@@ -6,7 +6,7 @@ import {
   esPartidaMenu,
   partidaBodySchema,
 } from "@/lib/partida-input";
-import { obtenerCuenta } from "@/services/cuentas";
+import { obtenerCuenta, respuestaCuentaDetalle } from "@/services/cuentas";
 import { agregarPartida } from "@/services/mesas";
 
 type Params = { params: Promise<{ id: string }> };
@@ -31,23 +31,26 @@ export async function POST(
       throw new HttpError("Solo admin puede agregar un platillo libre", 403);
     }
 
-    const cuenta = esPartidaMenu(body)
-      ? await agregarPartida({
-          cuentaId: id,
-          menuItemId: body.menuItemId,
-          cantidad: body.cantidad,
-          notas: body.notas,
-          sesion,
-        })
-      : await agregarPartida({
-          cuentaId: id,
-          descripcion: body.descripcion,
-          cantidad: body.cantidad,
-          precioPesos: body.precioPesos,
-          notas: body.notas,
-          sesion,
-        });
+    if (esPartidaMenu(body)) {
+      await agregarPartida({
+        cuentaId: id,
+        menuItemId: body.menuItemId,
+        cantidad: body.cantidad,
+        notas: body.notas,
+        sesion,
+      });
+    } else {
+      await agregarPartida({
+        cuentaId: id,
+        descripcion: body.descripcion,
+        cantidad: body.cantidad,
+        precioPesos: body.precioPesos,
+        notas: body.notas,
+        sesion,
+      });
+    }
 
+    const cuenta = await respuestaCuentaDetalle(id);
     return NextResponse.json({ cuenta });
   } catch (error) {
     return jsonError(error);

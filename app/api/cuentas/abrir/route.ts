@@ -3,6 +3,7 @@ import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
 import { requireSesion } from "@/lib/auth/require";
 import { uuidSchema } from "@/lib/uuid";
+import { respuestaCuentaDetalle } from "@/services/cuentas";
 import { abrirMesa } from "@/services/mesas";
 
 const bodySchema = z.object({
@@ -15,12 +16,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     const sesion = await requireSesion(request);
     const json: unknown = await request.json();
     const body = bodySchema.parse(json);
-    const cuenta = await abrirMesa({
+    const fila = await abrirMesa({
       mesa: body.mesa,
       meseroId: body.meseroId ?? sesion.meseroId,
       negocioId: sesion.negocioId,
       sesion,
     });
+    const cuenta = await respuestaCuentaDetalle(fila.id);
     return NextResponse.json({ cuenta });
   } catch (error) {
     return jsonError(error);

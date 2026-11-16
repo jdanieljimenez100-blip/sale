@@ -70,6 +70,17 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     }
   }, [cuentaId]);
 
+  function aplicarCuentaRespuesta(siguiente: CuentaConDetalle): void {
+    if (
+      !Array.isArray(siguiente.partidas) ||
+      !Array.isArray(siguiente.cobros)
+    ) {
+      void cargar();
+      return;
+    }
+    setCuenta(siguiente);
+  }
+
   const cargarMenu = useCallback(async (): Promise<void> => {
     try {
       const data = await apiFetch<MenuResponse>("/api/menu");
@@ -154,7 +165,7 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
           }),
         },
       );
-      setCuenta(data.cuenta);
+      aplicarCuentaRespuesta(data.cuenta);
       setSheetItem(null);
       setHojaMenu(false);
     } catch (err) {
@@ -181,7 +192,7 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
           }),
         },
       );
-      setCuenta(data.cuenta);
+      aplicarCuentaRespuesta(data.cuenta);
       setDesc("");
       setCant("1");
       setPrecio("");
@@ -200,8 +211,11 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     setError(null);
     setConfirmarQuitarId(null);
     try {
-      await apiFetch(`/api/partidas/${partidaId}`, { method: "DELETE" });
-      await cargar();
+      const data = await apiFetch<CuentaResponse>(
+        `/api/partidas/${partidaId}`,
+        { method: "DELETE" },
+      );
+      aplicarCuentaRespuesta(data.cuenta);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo quitar");
     } finally {
@@ -221,7 +235,16 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     setBusy(true);
     setError(null);
     try {
-      await apiFetch(`/api/cuentas/${cuentaId}/cerrar`, { method: "POST" });
+      const data = await apiFetch<CuentaResponse>(
+        `/api/cuentas/${cuentaId}/cerrar`,
+        { method: "POST" },
+      );
+      if (
+        !Array.isArray(data.cuenta.partidas) ||
+        !Array.isArray(data.cuenta.cobros)
+      ) {
+        await cargar();
+      }
       router.push("/cuentas");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cerrar");
@@ -246,11 +269,13 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
     );
   }
 
+  const partidas = cuenta.partidas ?? [];
+  const cobros = cuenta.cobros ?? [];
   const restante = cuenta.total_centavos - cuenta.pagado_consumo_centavos;
-  const propinas = cuenta.cobros.filter(
+  const propinas = cobros.filter(
     (c) => c.tipo === "propina" && c.estado === "pagado",
   );
-  const historial = cuenta.cobros.filter((c) => c.tipo === "consumo");
+  const historial = cobros.filter((c) => c.tipo === "consumo");
   const hayConsumo = historial.some(
     (c) => c.estado === "pendiente" || c.estado === "pagado",
   );
@@ -325,13 +350,13 @@ export function CuentaDetalle({ cuentaId }: Props): ReactElement {
             </button>
           ) : null}
         </div>
-        {cuenta.partidas.length === 0 ? (
+        {partidas.length === 0 ? (
           <p className="px-4 py-4 text-[15px] text-tinta-suave">
             Sin partidas todavía.
           </p>
         ) : (
           <ul className="divide-y divide-linea">
-            {cuenta.partidas.map((partida) => (
+            {partidas.map((partida) => (
               <li
                 key={partida.id}
                 className="flex items-center justify-between gap-3 px-4 py-3 text-[15px]"

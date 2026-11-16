@@ -12,6 +12,7 @@ function cobro(
     id: partial.id ?? "00000000-0000-0000-0000-000000000001",
     cuenta_id: null,
     mesero_id: null,
+    negocio_id: "11111111-1111-1111-1111-111111111111",
     tipo: partial.tipo,
     monto_centavos: 1,
     estado: partial.estado,

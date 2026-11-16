@@ -5,8 +5,12 @@ import { useEffect, useState, type ReactElement } from "react";
 import { Boton } from "@/components/ui/Boton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { apiFetch } from "@/lib/client-api";
+import { slugValido } from "@/lib/negocio-slug";
 
 export const COOKIE_RESTAURANTE = "sale_restaurante";
+
+const MSG_RESTAURANTE =
+  "No encontramos ese restaurante. Revisa el código o pide el enlace a tu admin.";
 
 type MeseroLogin = { id: string; nombre: string };
 
@@ -22,7 +26,7 @@ function leerSlugCookie(): string | null {
     return null;
   }
   const valor = decodeURIComponent(match.slice(COOKIE_RESTAURANTE.length + 1));
-  return /^[a-z0-9-]{3,40}$/.test(valor) ? valor : null;
+  return slugValido(valor) ? valor : null;
 }
 
 function guardarSlugCookie(slug: string): void {
@@ -45,6 +49,7 @@ export function EntrarPantalla({
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [listo, setListo] = useState(false);
+  const [codigoBorrador, setCodigoBorrador] = useState("");
 
   useEffect(() => {
     if (slugDesdeUrl) {
@@ -62,6 +67,7 @@ export function EntrarPantalla({
     }
     void (async () => {
       setLoading(true);
+      setError(null);
       try {
         const q = slug ? `?r=${encodeURIComponent(slug)}` : "";
         const data = await apiFetch<
@@ -71,7 +77,15 @@ export function EntrarPantalla({
         if ("necesitaRestaurante" in data && data.necesitaRestaurante) {
           setNecesitaRestaurante(true);
           setMeseros([]);
-        } else if ("meseros" in data) {
+          return;
+        }
+        if ("meseros" in data) {
+          if (slug && data.meseros.length === 0) {
+            setNecesitaRestaurante(true);
+            setMeseros([]);
+            setError(MSG_RESTAURANTE);
+            return;
+          }
           setNecesitaRestaurante(false);
           setMeseros(data.meseros);
           if (data.slug) {
@@ -135,13 +149,48 @@ export function EntrarPantalla({
         <header>
           <p className="text-[15px] font-semibold text-primario">Sale</p>
           <h1 className="mt-2 text-[32px] font-semibold text-tinta text-pretty">
-            Elige tu restaurante
+            Código del restaurante
           </h1>
           <p className="mt-2 text-[15px] text-tinta-suave">
-            Abre el enlace que te compartió tu admin (lleva el nombre del
-            restaurante en la dirección).
+            Escribe el código que te dio tu admin, o abre el enlace con
+            <span className="font-mono"> ?r=</span> en la dirección.
           </p>
         </header>
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const raw = codigoBorrador.trim().toLowerCase();
+            setError(null);
+            if (!slugValido(raw)) {
+              setError(MSG_RESTAURANTE);
+              return;
+            }
+            guardarSlugCookie(raw);
+            setNecesitaRestaurante(false);
+            setSlug(raw);
+          }}
+        >
+          <label className="flex flex-col gap-1 text-[15px] text-tinta">
+            Código del restaurante
+            <input
+              name="codigo"
+              autoComplete="off"
+              spellCheck={false}
+              className="min-h-12 rounded-boton border border-linea px-3 font-mono text-[15px]"
+              placeholder="ej. mi-local"
+              value={codigoBorrador}
+              onChange={(event) => setCodigoBorrador(event.target.value)}
+              required
+            />
+          </label>
+          <Boton type="submit">Continuar</Boton>
+        </form>
+        {error ? (
+          <p className="text-peligro" role="alert">
+            {error}
+          </p>
+        ) : null}
       </div>
     );
   }

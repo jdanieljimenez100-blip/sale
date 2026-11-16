@@ -142,13 +142,20 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     slug: "seguridad",
     titulo: "Seguridad",
     resumen:
-      "Pagado solo por el banco, PIN por persona y privacidad.",
+      "Pagado solo por el banco, un restaurante a la vez, PIN y privacidad.",
     secciones: [
       {
         titulo: "Pagado de verdad",
         parrafos: [
           "El estado “pagado” solo cambia cuando llega un webhook firmado de pey/el banco. Un toque en la pantalla no alcanza.",
           "Si el mismo aviso llega dos veces, Sale lo cuenta una sola vez (idempotencia por id del evento).",
+        ],
+      },
+      {
+        titulo: "Tu restaurante, tus datos",
+        parrafos: [
+          "Cada restaurante solo ve sus mesas, cobros, menú, meseros y reportes. No se mezclan con los de otro local.",
+          "Entras con el enlace de tu restaurante (o el que ya guardó este dispositivo). Si atiendes más de un local con acceso de admin, puedes cambiar de restaurante sin mezclar la información.",
         ],
       },
       {

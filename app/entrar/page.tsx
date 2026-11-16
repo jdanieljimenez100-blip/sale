@@ -19,15 +19,22 @@ export default async function EntrarPage({
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 px-4 py-8">
       <EntrarPantalla slugDesdeUrl={slugDesdeUrl} />
-      <DemoCredenciales />
       <footer className="mt-auto flex flex-col gap-3 border-t border-linea pt-4">
         <Link
           href="/ayuda"
-          className="text-[15px] font-medium text-primario underline underline-offset-2"
+          className="text-[15px] font-medium text-primario underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
         >
           ¿Cómo funciona?
         </Link>
         <AvisoPrivacidadSimplificado />
+        <details className="group">
+          <summary className="cursor-pointer py-2 text-[15px] font-semibold text-tinta underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario">
+            Datos de prueba
+          </summary>
+          <div className="mt-2">
+            <DemoCredenciales />
+          </div>
+        </details>
       </footer>
     </main>
   );

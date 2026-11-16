@@ -37,9 +37,8 @@ abiertas en tablas operativas).
 
 | Función | Para qué |
 |---|---|---|
-| `sale_insert_cobro` | Legado: persiste cobro + QR derivando `negocio_id` (borrar en Fase 3c) |
 | `sale_crear_cobro` | Persistir cobro + QR con `p_negocio_id` (valida cuenta/mesero o admin en `negocio_accesos`) |
-| `sale_mark_cobro_pagado` | Marcar pagado desde webhook; overload con `p_negocio_id` (scoped). Firma de 4 args se conserva temporalmente |
+| `sale_mark_cobro_pagado` | Marcar pagado desde webhook con `p_negocio_id` (scoped). La firma de 4 args se eliminó (§17 sql-para-correr) |
 | `sale_set_cuenta_estado` | Ajuste de estado (legado / casos puntuales) |
 | `sale_recalc_cuenta` | Recalcular totales/estado; inserta ticket si `pagada` |
 | `sale_expire_consumo_pendientes` | Expirar QR de consumo al regenerar/cobrar |

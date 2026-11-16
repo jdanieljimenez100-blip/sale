@@ -348,19 +348,6 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
-      sale_insert_cobro: {
-        Args: {
-          p_cuenta_id: string | null;
-          p_mesero_id: string | null;
-          p_tipo: TipoCobro;
-          p_monto_centavos: number;
-          p_pey_qr_id: string;
-          p_qr_string: string;
-          p_concepto: string;
-          p_cobro_origen_id?: string | null;
-        };
-        Returns: Database["public"]["Tables"]["cobros"]["Row"];
-      };
       sale_crear_cobro: {
         Args: {
           p_cuenta_id: string | null;
@@ -381,7 +368,7 @@ export type Database = {
           p_event_id: string;
           p_transaction_id: string;
           p_pagado_at: string;
-          p_negocio_id?: string;
+          p_negocio_id: string;
         };
         Returns: Array<{
           applied: boolean;

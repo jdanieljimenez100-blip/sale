@@ -130,10 +130,22 @@ y el `sale_mark_cobro_pagado` de 4 args; la app nueva usa los RPCs con
   `pey_bank_account_codi_status`.
 - RPC nueva `sale_crear_cobro(..., p_negocio_id)`: valida cuenta/mesero
   (o admin en `negocio_accesos`) e inserta con ese `negocio_id`.
-  `sale_insert_cobro` se conserva (borrar en Fase 3c).
+  `sale_insert_cobro` se conservó temporalmente (drop en §17).
 - Overload `sale_mark_cobro_pagado(..., p_negocio_id)`: solo marca si
   `cobros.negocio_id` coincide; si no, `applied=false` y `cobro_id` null.
 - REVOKE PUBLIC/anon/authenticated; GRANT service_role en RPCs nuevas.
+
+## 17) Drop RPCs legados de cobro (Fase 3c)
+
+`supabase/migrations/20261120_drop_legacy_cobro_rpcs.sql`
+
+Correr **después** de que la app desplegada ya use `sale_crear_cobro` y
+`sale_mark_cobro_pagado` con `p_negocio_id` (migración 16 / pey por negocio).
+
+- `DROP FUNCTION` `sale_insert_cobro` (8 args: cuenta, mesero, tipo, monto,
+  pey ids, concepto, origen).
+- `DROP FUNCTION` `sale_mark_cobro_pagado` (4 args: pey_qr, event, transaction,
+  pagado_at) — se conserva el overload con `p_negocio_id`.
 
 ## Verificación
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   Fragment,
   useCallback,
@@ -7,6 +8,7 @@ import {
   useState,
   type ReactElement,
 } from "react";
+import { Boton } from "@/components/ui/Boton";
 import { apiFetch } from "@/lib/client-api";
 import type { RangoReporteDias } from "@/lib/dia-mexico";
 import { formatearMxn } from "@/lib/money";
@@ -43,6 +45,7 @@ function valorOrden(
 }
 
 export function ReporteDesempeno(): ReactElement {
+  const router = useRouter();
   const [dias, setDias] = useState<RangoReporteDias>(1);
   const [reporte, setReporte] = useState<Reporte | null>(null);
   const [yo, setYo] = useState<Yo | null>(null);
@@ -149,6 +152,50 @@ export function ReporteDesempeno(): ReactElement {
             {label}
           </button>
         ))}
+      </div>
+
+      <div
+        className="flex flex-col gap-2 sm:flex-row"
+        role="group"
+        aria-label="Exportar reporte"
+      >
+        <div className="flex-1">
+          <Boton
+            type="button"
+            variante="secundario"
+            onClick={() => {
+              window.location.assign(
+                `/api/reporte/export?dias=${dias}&tipo=resumen`,
+              );
+            }}
+          >
+            Descargar Excel
+          </Boton>
+        </div>
+        <div className="flex-1">
+          <Boton
+            type="button"
+            variante="secundario"
+            onClick={() => {
+              window.location.assign(
+                `/api/reporte/export?dias=${dias}&tipo=pagos`,
+              );
+            }}
+          >
+            Excel de pagos
+          </Boton>
+        </div>
+        <div className="flex-1">
+          <Boton
+            type="button"
+            variante="primario"
+            onClick={() => {
+              router.push(`/reporte/imprimir?dias=${dias}`);
+            }}
+          >
+            Guardar PDF
+          </Boton>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

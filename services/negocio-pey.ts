@@ -7,6 +7,7 @@ import { aadPey } from "@/services/pey-config";
 
 export type NegocioPeyPublico = {
   configurado: boolean;
+  usaPeyEntorno: boolean;
   apiKeyUltimos4: string | null;
   webhookUrl: string;
   ultimoWebhookAt: string | null;
@@ -33,13 +34,15 @@ export async function obtenerPeyPublico(
     throw new Error("Negocio no encontrado");
   }
 
+  const usaPeyEntorno = Boolean(data.usa_pey_entorno);
   const configurado = Boolean(
     (data.pey_api_key_cifrada && data.pey_webhook_secret_cifrado) ||
-      data.usa_pey_entorno,
+      usaPeyEntorno,
   );
 
   return {
     configurado,
+    usaPeyEntorno,
     apiKeyUltimos4: data.pey_api_key_ultimos4,
     webhookUrl: `${origin}/api/webhooks/pey/${negocioId}`,
     ultimoWebhookAt: data.pey_webhook_ultimo_at,

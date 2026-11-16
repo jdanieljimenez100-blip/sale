@@ -1,7 +1,6 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 import { MeseroChrome } from "@/components/MeseroChrome";
-import { PropinasAjustes } from "@/components/PropinasAjustes";
 
 export default function AjustesPage(): ReactElement {
   return (
@@ -12,7 +11,12 @@ export default function AjustesPage(): ReactElement {
         </h1>
         <p className="mt-1 text-[15px] text-tinta-suave">Solo administración</p>
       </header>
-      <PropinasAjustes />
+      <Link
+        href="/ajustes/restaurante"
+        className="flex min-h-12 items-center text-[15px] font-semibold text-primario underline underline-offset-2"
+      >
+        Este restaurante
+      </Link>
       <Link
         href="/ajustes/menu"
         className="flex min-h-12 items-center text-[15px] font-semibold text-primario underline underline-offset-2"

@@ -2,9 +2,12 @@ import { hashPin, validarPin, verificarPin } from "@/lib/auth/pin";
 import type { RolSesion } from "@/lib/auth/sesion";
 import { HttpError } from "@/lib/api-error";
 import { demoTokenValido } from "@/lib/demo-auth";
+import { slugValido } from "@/lib/negocio-slug";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { registrarBitacora } from "@/services/bitacora";
+
+export { slugValido } from "@/lib/negocio-slug";
 
 type MeseroRow = Database["public"]["Tables"]["meseros"]["Row"];
 
@@ -208,12 +211,6 @@ export async function listarMeserosActivosLogin(
     throw new Error("No se pudieron listar meseros");
   }
   return data ?? [];
-}
-
-const SLUG_RE = /^[a-z0-9-]{3,40}$/;
-
-export function slugValido(slug: string): boolean {
-  return SLUG_RE.test(slug);
 }
 
 export async function obtenerNegocioPorSlug(

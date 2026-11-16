@@ -1,7 +1,9 @@
+import { HttpError } from "@/lib/api-error";
 import {
   validarPropinaPorcentajes,
   validarRepartoCocinaPct,
 } from "@/lib/negocio-propinas";
+import { slugValido } from "@/lib/negocio-slug";
 import { PROPINA_PORCENTAJES_DEFAULT } from "@/lib/propina";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
@@ -12,6 +14,12 @@ type NegocioRow = Database["public"]["Tables"]["negocios"]["Row"];
 export type ConfigPropinasNegocio = {
   propinaPorcentajes: number[];
   repartoCocinaPct: number;
+};
+
+export type NegocioPerfil = {
+  id: string;
+  nombre: string;
+  slug: string;
 };
 
 export { validarPropinaPorcentajes, validarRepartoCocinaPct };
@@ -28,6 +36,69 @@ export async function obtenerNegocio(
   if (error || !data) {
     throw new Error("No se encontró el negocio");
   }
+  return data;
+}
+
+export async function obtenerPerfilNegocio(
+  negocioId: string,
+): Promise<NegocioPerfil> {
+  const negocio = await obtenerNegocio(negocioId);
+  return {
+    id: negocio.id,
+    nombre: negocio.nombre,
+    slug: negocio.slug,
+  };
+}
+
+export async function actualizarPerfilNegocio(input: {
+  negocioId: string;
+  nombre: string;
+  slug: string;
+  actorMeseroId: string;
+}): Promise<NegocioPerfil> {
+  const nombre = input.nombre.trim();
+  const slug = input.slug.trim().toLowerCase();
+  if (nombre.length < 2 || nombre.length > 80) {
+    throw new HttpError("El nombre debe tener entre 2 y 80 caracteres", 400);
+  }
+  if (!slugValido(slug)) {
+    throw new HttpError(
+      "El código debe tener 3 a 40 caracteres: minúsculas, números o guion",
+      400,
+    );
+  }
+
+  const supabase = createServiceClient();
+  const { data: conflicto, error: errConflicto } = await supabase
+    .from("negocios")
+    .select("id")
+    .eq("slug", slug)
+    .neq("id", input.negocioId)
+    .maybeSingle();
+  if (errConflicto) {
+    throw new Error("No se pudo validar el código");
+  }
+  if (conflicto) {
+    throw new HttpError("Ese código de restaurante ya existe", 409);
+  }
+
+  const { data, error } = await supabase
+    .from("negocios")
+    .update({ nombre, slug })
+    .eq("id", input.negocioId)
+    .select("id, nombre, slug")
+    .single();
+  if (error || !data) {
+    throw new Error("No se pudo guardar el restaurante");
+  }
+
+  await registrarBitacora(
+    input.actorMeseroId,
+    "negocio_actualizar",
+    { nombre: data.nombre, slug: data.slug },
+    input.negocioId,
+  );
+
   return data;
 }
 

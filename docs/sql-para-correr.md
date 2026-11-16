@@ -102,6 +102,20 @@ Luego, si aún no tienes el menú demo, corre el bloque de `menu_items` en:
 - Actualiza `sale_recalc_cuenta` para insertar ticket al pasar a `pagada`
   (`ON CONFLICT DO NOTHING`).
 
+## 15) Multi-negocio (aislamiento por restaurante)
+
+`supabase/migrations/20261118_multi_negocio.sql`
+
+Puede correrse **antes** del deploy de la app (la firma de `sale_insert_cobro`
+no cambia; el RPC rellena `cobros.negocio_id` solo).
+
+- `negocios.slug` UNIQUE NOT NULL (demo → `'demo'`); check `^[a-z0-9-]{3,40}$`.
+- Tabla `negocio_accesos` (admin cruzado; RLS sin policies).
+- `cobros.negocio_id` NOT NULL + índice `(negocio_id, estado, pagado_at)`.
+- `bitacora.negocio_id` nullable.
+- DROP policies `*_select_public` y `REVOKE SELECT` de anon/authenticated
+  sobre cuentas, partidas, cobros, meseros, negocios.
+
 ## Verificación
 
 ```sql

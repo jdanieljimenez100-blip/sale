@@ -1,3 +1,13 @@
+export class ApiClientError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiClientError";
+    this.status = status;
+  }
+}
+
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit & { withDemoToken?: boolean },
@@ -22,7 +32,7 @@ export async function apiFetch<T>(
         message = record.error;
       }
     }
-    throw new Error(message);
+    throw new ApiClientError(message, response.status);
   }
   return json as T;
 }

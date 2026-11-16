@@ -201,3 +201,40 @@ body {
     opacity: 1;
   }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  .entrar-paso {
+    animation: entrar-paso-in var(--dur) var(--ease);
+  }
+
+  .pin-shake {
+    animation: pin-shake 420ms var(--ease);
+  }
+}
+
+@keyframes entrar-paso-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pin-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}

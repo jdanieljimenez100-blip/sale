@@ -1,38 +1,35 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactElement } from "react";
-import { Boton } from "@/components/ui/Boton";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+} from "react";
+import { PasoBienvenida } from "@/components/entrar/PasoBienvenida";
+import { PasoMeseros } from "@/components/entrar/PasoMeseros";
+import { PasoPin } from "@/components/entrar/PasoPin";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { apiFetch } from "@/lib/client-api";
+import { ApiClientError, apiFetch } from "@/lib/client-api";
+import {
+  borrarSlugCookie,
+  guardarSlugCookie,
+  leerSlugCookie,
+  MSG_BLOQUEO,
+  MSG_PIN,
+  MSG_RESTAURANTE,
+  PIN_MAX,
+  PIN_MIN,
+  type LoginListaRespuesta,
+  type MeseroLogin,
+  type NegocioLogin,
+  type PasoEntrar,
+} from "@/lib/entrar";
 import { slugValido } from "@/lib/negocio-slug";
 
-export const COOKIE_RESTAURANTE = "sale_restaurante";
-
-const MSG_RESTAURANTE =
-  "No encontramos ese restaurante. Revisa el código o pide el enlace a tu admin.";
-
-type MeseroLogin = { id: string; nombre: string };
-
-function leerSlugCookie(): string | null {
-  if (typeof document === "undefined") {
-    return null;
-  }
-  const match = document.cookie
-    .split(";")
-    .map((p) => p.trim())
-    .find((p) => p.startsWith(`${COOKIE_RESTAURANTE}=`));
-  if (!match) {
-    return null;
-  }
-  const valor = decodeURIComponent(match.slice(COOKIE_RESTAURANTE.length + 1));
-  return slugValido(valor) ? valor : null;
-}
-
-function guardarSlugCookie(slug: string): void {
-  const maxAge = 60 * 60 * 24 * 365;
-  document.cookie = `${COOKIE_RESTAURANTE}=${encodeURIComponent(slug)}; path=/; max-age=${maxAge}; samesite=lax`;
-}
+export { COOKIE_RESTAURANTE } from "@/lib/entrar";
 
 export function EntrarPantalla({
   slugDesdeUrl,
@@ -40,9 +37,14 @@ export function EntrarPantalla({
   slugDesdeUrl: string | null;
 }): ReactElement {
   const router = useRouter();
+  const tituloId = useId();
+  const pasoRootRef = useRef<HTMLDivElement>(null);
+  const enviarRef = useRef<() => Promise<void>>(() => Promise.resolve());
   const [slug, setSlug] = useState<string | null>(slugDesdeUrl);
+  const [negocio, setNegocio] = useState<NegocioLogin | null>(null);
   const [meseros, setMeseros] = useState<MeseroLogin[]>([]);
-  const [necesitaRestaurante, setNecesitaRestaurante] = useState(false);
+  const [pedirCodigo, setPedirCodigo] = useState(false);
+  const [paso, setPaso] = useState<PasoEntrar>(1);
   const [elegido, setElegido] = useState<MeseroLogin | null>(null);
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -50,11 +52,14 @@ export function EntrarPantalla({
   const [loading, setLoading] = useState(true);
   const [listo, setListo] = useState(false);
   const [codigoBorrador, setCodigoBorrador] = useState("");
+  const [bloqueado, setBloqueado] = useState(false);
+  const [shake, setShake] = useState(false);
 
   useEffect(() => {
     if (slugDesdeUrl) {
       guardarSlugCookie(slugDesdeUrl);
       setSlug(slugDesdeUrl);
+      setPedirCodigo(false);
     } else {
       setSlug(leerSlugCookie());
     }
@@ -70,28 +75,37 @@ export function EntrarPantalla({
       setError(null);
       try {
         const q = slug ? `?r=${encodeURIComponent(slug)}` : "";
-        const data = await apiFetch<
-          | { meseros: MeseroLogin[]; slug?: string }
-          | { necesitaRestaurante: true }
-        >(`/api/auth/login-lista${q}`);
+        const data = await apiFetch<LoginListaRespuesta>(
+          `/api/auth/login-lista${q}`,
+        );
         if ("necesitaRestaurante" in data && data.necesitaRestaurante) {
-          setNecesitaRestaurante(true);
+          setPedirCodigo(true);
+          setNegocio(null);
           setMeseros([]);
+          setPaso(1);
           return;
         }
         if ("meseros" in data) {
-          if (slug && data.meseros.length === 0) {
-            setNecesitaRestaurante(true);
+          if (slug && data.meseros.length === 0 && !data.negocio) {
+            setPedirCodigo(true);
+            setNegocio(null);
             setMeseros([]);
+            setPaso(1);
             setError(MSG_RESTAURANTE);
             return;
           }
-          setNecesitaRestaurante(false);
+          setPedirCodigo(false);
           setMeseros(data.meseros);
+          if (data.negocio) {
+            setNegocio(data.negocio);
+          } else if (data.slug) {
+            setNegocio({ nombre: data.slug, slug: data.slug });
+          }
           if (data.slug) {
             setSlug(data.slug);
             guardarSlugCookie(data.slug);
           }
+          setPaso(1);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error");
@@ -101,13 +115,16 @@ export function EntrarPantalla({
     })();
   }, [listo, slug]);
 
-  function digito(d: string): void {
-    setPin((p) => (p.length >= 6 ? p : p + d));
-    setError(null);
-  }
+  useEffect(() => {
+    if (!shake) {
+      return undefined;
+    }
+    const t = window.setTimeout(() => setShake(false), 450);
+    return () => window.clearTimeout(t);
+  }, [shake]);
 
-  async function enviar(): Promise<void> {
-    if (!elegido || pin.length < 4) {
+  async function enviarPin(): Promise<void> {
+    if (!elegido || pin.length < PIN_MIN || bloqueado || busy) {
       return;
     }
     setBusy(true);
@@ -126,11 +143,79 @@ export function EntrarPantalla({
       });
       router.replace("/cuentas");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "PIN incorrecto");
       setPin("");
+      if (err instanceof ApiClientError && err.status === 423) {
+        setBloqueado(true);
+        setError(MSG_BLOQUEO);
+      } else {
+        setShake(true);
+        setError(MSG_PIN);
+      }
     } finally {
       setBusy(false);
     }
+  }
+
+  enviarRef.current = enviarPin;
+
+  useEffect(() => {
+    const root = pasoRootRef.current;
+    if (!root || loading) {
+      return;
+    }
+    const heading = root.querySelector<HTMLElement>("h1");
+    heading?.focus({ preventScroll: true });
+  }, [paso, loading, pedirCodigo, negocio]);
+
+  useEffect(() => {
+    if (paso !== 3 || !elegido || bloqueado || busy) {
+      return;
+    }
+    function onKey(event: KeyboardEvent): void {
+      if (event.key >= "0" && event.key <= "9") {
+        event.preventDefault();
+        setPin((p) => (p.length >= PIN_MAX ? p : p + event.key));
+        setError(null);
+        return;
+      }
+      if (event.key === "Backspace") {
+        event.preventDefault();
+        setPin((p) => p.slice(0, -1));
+        return;
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void enviarRef.current();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [paso, elegido, bloqueado, busy]);
+
+  function confirmarCodigo(): void {
+    const raw = codigoBorrador.trim().toLowerCase();
+    setError(null);
+    if (!slugValido(raw)) {
+      setError(MSG_RESTAURANTE);
+      return;
+    }
+    guardarSlugCookie(raw);
+    setPedirCodigo(false);
+    setSlug(raw);
+  }
+
+  function cambiarRestaurante(): void {
+    borrarSlugCookie();
+    setSlug(null);
+    setNegocio(null);
+    setMeseros([]);
+    setElegido(null);
+    setPin("");
+    setBloqueado(false);
+    setCodigoBorrador("");
+    setPedirCodigo(true);
+    setPaso(1);
+    setError(null);
   }
 
   if (!listo || loading) {
@@ -143,165 +228,77 @@ export function EntrarPantalla({
     );
   }
 
-  if (necesitaRestaurante) {
-    return (
-      <div className="flex flex-col gap-4">
-        <header>
-          <p className="text-[15px] font-semibold text-primario">Sale</p>
-          <h1 className="mt-2 text-[32px] font-semibold text-tinta text-pretty">
-            Código del restaurante
-          </h1>
-          <p className="mt-2 text-[15px] text-tinta-suave">
-            Escribe el código que te dio tu admin, o abre el enlace con
-            <span className="font-mono"> ?r=</span> en la dirección.
-          </p>
-        </header>
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const raw = codigoBorrador.trim().toLowerCase();
-            setError(null);
-            if (!slugValido(raw)) {
-              setError(MSG_RESTAURANTE);
-              return;
-            }
-            guardarSlugCookie(raw);
-            setNecesitaRestaurante(false);
-            setSlug(raw);
-          }}
-        >
-          <label className="flex flex-col gap-1 text-[15px] text-tinta">
-            Código del restaurante
-            <input
-              name="codigo"
-              autoComplete="off"
-              spellCheck={false}
-              className="min-h-12 rounded-boton border border-linea px-3 font-mono text-[15px]"
-              placeholder="ej. mi-local"
-              value={codigoBorrador}
-              onChange={(event) => setCodigoBorrador(event.target.value)}
-              required
-            />
-          </label>
-          <Boton type="submit">Continuar</Boton>
-        </form>
-        {error ? (
-          <p className="text-peligro" role="alert">
-            {error}
-          </p>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (!elegido) {
-    return (
-      <div className="flex flex-col gap-4">
-        <header>
-          <p className="text-[15px] font-semibold text-primario">Sale</p>
-          <h1 className="mt-2 text-[32px] font-semibold text-tinta text-pretty">
-            ¿Quién atiende?
-          </h1>
-        </header>
-        {meseros.length === 0 ? (
-          <p className="rounded-hoja border border-linea bg-superficie p-4 text-tinta-suave">
-            No hay meseros con PIN. Ve a{" "}
-            <a href="/setup" className="font-semibold text-primario underline">
-              /setup
-            </a>{" "}
-            para el primer admin.
-          </p>
-        ) : (
-          <ul className="divide-y divide-linea rounded-hoja border border-linea bg-superficie">
-            {meseros.map((m) => (
-              <li key={m.id}>
-                <button
-                  type="button"
-                  onClick={() => setElegido(m)}
-                  className="pressable flex min-h-14 w-full items-center px-4 text-left text-[17px] font-semibold text-tinta hover:bg-fondo focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primario"
-                >
-                  {m.nombre}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {error ? (
-          <p className="text-peligro" role="alert">
-            {error}
-          </p>
-        ) : null}
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-4">
-      <header>
-        <button
-          type="button"
-          onClick={() => {
-            setElegido(null);
-            setPin("");
-            setError(null);
-          }}
-          className="text-[15px] text-tinta-suave underline underline-offset-2"
-        >
-          Otro mesero
-        </button>
-        <h1 className="mt-2 text-[32px] font-semibold text-tinta text-pretty">
-          Hola, {elegido.nombre}
-        </h1>
-        <p className="mt-1 text-tinta-suave">Escribe tu PIN</p>
-      </header>
-      <p
-        className="flex min-h-14 items-center justify-center rounded-hoja border border-linea bg-superficie text-[32px] tracking-[0.4em] text-tinta"
-        aria-live="polite"
-      >
-        {"•".repeat(pin.length) || " "}
-      </p>
-      <div className="grid grid-cols-3 gap-2">
-        {["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"].map(
-          (tecla, i) => {
-            if (tecla === "") {
-              return <div key={`empty-${i}`} />;
-            }
-            return (
-              <button
-                key={tecla}
-                type="button"
-                disabled={busy}
-                aria-label={tecla === "⌫" ? "Borrar" : undefined}
-                onClick={() => {
-                  if (tecla === "⌫") {
-                    setPin((p) => p.slice(0, -1));
-                    return;
-                  }
-                  digito(tecla);
-                }}
-                className="pressable flex min-h-16 items-center justify-center rounded-boton bg-tinta text-[22px] font-semibold text-primario-tinta focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario disabled:opacity-50"
-              >
-                {tecla}
-              </button>
-            );
-          },
-        )}
+    <div ref={pasoRootRef} className="flex flex-col gap-5">
+      <div key={paso} className="entrar-paso flex flex-col gap-5">
+        {paso === 1 ? (
+          <PasoBienvenida
+            tituloId={tituloId}
+            mostrarFormCodigo={pedirCodigo || !negocio}
+            negocio={negocio}
+            codigoBorrador={codigoBorrador}
+            onCodigoChange={setCodigoBorrador}
+            onConfirmarCodigo={confirmarCodigo}
+            onCambiarRestaurante={cambiarRestaurante}
+            onContinuar={() => {
+              setError(null);
+              setPaso(2);
+            }}
+          />
+        ) : null}
+
+        {paso === 2 ? (
+          <PasoMeseros
+            tituloId={tituloId}
+            meseros={meseros}
+            onAtras={() => setPaso(1)}
+            onElegir={(m) => {
+              setElegido(m);
+              setPin("");
+              setError(null);
+              setBloqueado(false);
+              setPaso(3);
+            }}
+          />
+        ) : null}
+
+        {paso === 3 && elegido ? (
+          <PasoPin
+            tituloId={tituloId}
+            elegido={elegido}
+            pin={pin}
+            busy={busy}
+            bloqueado={bloqueado}
+            shake={shake}
+            onVolver={() => {
+              setElegido(null);
+              setPin("");
+              setError(null);
+              setBloqueado(false);
+              setPaso(2);
+            }}
+            onDigito={(d) => {
+              if (bloqueado) {
+                return;
+              }
+              setPin((p) => (p.length >= PIN_MAX ? p : p + d));
+              setError(null);
+            }}
+            onBorrar={() => setPin((p) => p.slice(0, -1))}
+            onEntrar={() => {
+              void enviarPin();
+            }}
+          />
+        ) : null}
       </div>
-      <Boton
-        tamano="lg"
-        disabled={busy || pin.length < 4}
-        onClick={() => {
-          void enviar();
-        }}
-      >
-        Entrar
-      </Boton>
-      {error ? (
-        <p className="text-center text-peligro" role="alert">
-          {error}
-        </p>
-      ) : null}
+
+      <div aria-live="assertive" aria-atomic="true" className="min-h-5">
+        {error ? (
+          <p className="text-center text-[15px] text-peligro" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

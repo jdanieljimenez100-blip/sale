@@ -10,3 +10,5 @@ tsconfig.tsbuildinfo
 npm-debug.log*
 .cursor/mcp.json
 .vercel
+# Perfiles de navegador y capturas temporales de herramientas (pueden traer cookies)
+tmp/

@@ -50,25 +50,25 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     slug: "conectar-pey",
     titulo: "Conectar pey (CoDi)",
     resumen:
-      "Pasos en el portal de pey para que el restaurante pueda cobrar y recibir propinas.",
+      "Pega la API key en Ajustes → Restaurante, copia tu URL de webhook al portal de pey y prueba con un centavo.",
     secciones: [
       {
         titulo: "Antes de empezar",
         parrafos: [
-          "pey es quien genera los QR CoDi y avisa cuando un pago quedó hecho. Sale solo habla con pey desde el servidor: la llave y el secreto nunca van al navegador ni se comparten por chat.",
+          "pey genera los QR CoDi y avisa cuando un pago quedó hecho. Cada restaurante guarda su propia API key y secreto del webhook cifrados en Sale (Ajustes → Restaurante). Nunca van al navegador completos ni se comparten por chat.",
         ],
       },
       {
-        titulo: "Pasos en portal.mipey.mx",
+        titulo: "Pasos en portal.mipey.mx y en Sale",
         parrafos: [
           "Hazlo una vez por restaurante. Si cambias de llave, también cambia el secreto del webhook.",
         ],
         pasos: [
           "Crea tu cuenta en portal.mipey.mx.",
           "En “Desarrollador”, crea UNA API key por restaurante.",
-          "En esa misma key configura el webhook con la URL que Sale te muestra en Ajustes (incluye el id de tu restaurante) y guarda el secreto. Cada API key tiene un solo webhook y su propio secreto.",
-          "Copia la API key y el secreto del webhook y pégalos en Ajustes de Sale (solo admin). Sale los guarda cifrados; nunca los verás completos otra vez.",
-          "Registra las cuentas bancarias (CLABE) del restaurante y de los meseros bajo esa misma API key. En Sale solo se guarda la referencia que pey te da, no la CLABE.",
+          "En Sale ve a Ajustes → Restaurante, copia la URL del webhook de ese restaurante y pégala en el portal de pey, en el webhook de ESTA API key. Guarda el secreto que pey te muestra.",
+          "Pega la API key y el secreto del webhook en Ajustes → Restaurante (solo admin). Sale los guarda cifrados; después solo verás los últimos 4 de la key.",
+          "Registra las cuentas bancarias (CLABE) del restaurante y de los meseros bajo esa misma API key. En Sale pega el id de cuenta (ULID) y toca Verificar; no se guarda la CLABE.",
           "La activación CoDi puede tardar hasta 5 días hábiles (el estado pasa de PENDING a ACTIVE).",
           "Prueba con un cobro de un centavo ($0.01) para confirmar que el webhook llega y la mesa se marca pagada.",
         ],
@@ -76,8 +76,36 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
       {
         titulo: "Seguridad de la API key",
         parrafos: [
-          "La API key y el secreto del webhook se guardan cifrados por restaurante. Nunca van al navegador ni a una página pública.",
-          "Si sospechas que se filtraron, rota la key y el secreto en pey y vuelve a pegarlos en Ajustes de Sale.",
+          "La API key y el secreto del webhook se guardan cifrados por restaurante en Ajustes → Restaurante. Nunca van a una página pública.",
+          "Si sospechas que se filtraron, rota la key y el secreto en pey y vuelve a pegarlos en Ajustes → Restaurante.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "varios-restaurantes",
+    titulo: "Varios restaurantes",
+    resumen:
+      "Crea sucursales, cámbialas en la sesión y arma dispositivos con /entrar?r=.",
+    secciones: [
+      {
+        titulo: "Crear otra sucursal",
+        parrafos: [
+          "En Ajustes → Restaurantes (solo admin) toca “Nuevo restaurante”, escribe nombre y código (slug). Sale te da acceso de admin a esa sucursal y te pregunta si quieres cambiar a ella.",
+        ],
+      },
+      {
+        titulo: "Cambiar de sucursal",
+        parrafos: [
+          "Si tienes acceso a dos o más, en la cabecera aparece “Sucursal” para cambiar sin cerrar sesión. También puedes usar “Cambiar a este” en Ajustes → Restaurantes.",
+          "Al cambiar, ves solo las mesas, cobros y menú de esa sucursal.",
+        ],
+      },
+      {
+        titulo: "Dispositivos del salón",
+        parrafos: [
+          "Cada sucursal tiene su enlace /entrar?r=codigo. En Ajustes → Restaurante puedes copiarlo o mostrar el QR para tabletas y celulares del salón.",
+          "Si entras sin código y hay más de un restaurante, Sale te pide el código; no lista los nombres por privacidad.",
         ],
       },
     ],

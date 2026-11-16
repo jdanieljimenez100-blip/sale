@@ -2,10 +2,18 @@
 
 import { createContext, useContext, type ReactElement, type ReactNode } from "react";
 
+export type NegocioSesion = {
+  id: string;
+  nombre: string;
+  slug: string;
+};
+
 export type SesionYo = {
   meseroId: string;
   nombre: string;
   rol: "mesero" | "admin";
+  negocio: NegocioSesion;
+  negocios: NegocioSesion[];
 };
 
 const SesionContext = createContext<SesionYo | null>(null);

@@ -231,13 +231,26 @@ export async function obtenerNegocioPorSlug(
   return data;
 }
 
+/** Datos públicos del restaurante en la lista de login (sin id). */
+export type LoginListaNegocio = {
+  nombre: string;
+  slug: string;
+};
+
 export type LoginListaResultado =
-  | { meseros: Array<{ id: string; nombre: string }>; slug: string }
+  | {
+      meseros: Array<{ id: string; nombre: string }>;
+      slug: string;
+      /** Presente cuando el restaurante se resolvió; ausente si el slug no existe. */
+      negocio?: LoginListaNegocio;
+    }
   | { necesitaRestaurante: true };
 
 /**
  * Lista pública de meseros para /entrar.
  * Con slug: solo ese negocio. Sin slug: un negocio único, o pide restaurante.
+ * Con restaurante resuelto incluye `negocio: { nombre, slug }`.
+ * Con `necesitaRestaurante: true`, `negocio` no viene.
  */
 export async function listarLoginPublico(
   slug: string | null,
@@ -250,12 +263,16 @@ export async function listarLoginPublico(
       return { meseros: [], slug };
     }
     const meseros = await listarMeserosActivosLogin(negocio.id);
-    return { meseros, slug: negocio.slug };
+    return {
+      meseros,
+      slug: negocio.slug,
+      negocio: { nombre: negocio.nombre, slug: negocio.slug },
+    };
   }
 
   const { data: negocios, error } = await supabase
     .from("negocios")
-    .select("id, slug")
+    .select("id, nombre, slug")
     .order("created_at", { ascending: true })
     .limit(2);
   if (error) {
@@ -269,7 +286,11 @@ export async function listarLoginPublico(
   }
   const unico = negocios[0]!;
   const meseros = await listarMeserosActivosLogin(unico.id);
-  return { meseros, slug: unico.slug };
+  return {
+    meseros,
+    slug: unico.slug,
+    negocio: { nombre: unico.nombre, slug: unico.slug },
+  };
 }
 
 export type NegocioResumen = {

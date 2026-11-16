@@ -184,13 +184,14 @@ export async function setupPrimerAdmin(input: {
   return { meseroId: data.id, nombre: data.nombre };
 }
 
-export async function listarMeserosActivosLogin(): Promise<
-  Array<{ id: string; nombre: string }>
-> {
+export async function listarMeserosActivosLogin(
+  negocioId: string,
+): Promise<Array<{ id: string; nombre: string }>> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("meseros")
     .select("id, nombre")
+    .eq("negocio_id", negocioId)
     .eq("activo", true)
     .not("pin_hash", "is", null)
     .order("nombre", { ascending: true });
@@ -198,6 +199,71 @@ export async function listarMeserosActivosLogin(): Promise<
     throw new Error("No se pudieron listar meseros");
   }
   return data ?? [];
+}
+
+const SLUG_RE = /^[a-z0-9-]{3,40}$/;
+
+export function slugValido(slug: string): boolean {
+  return SLUG_RE.test(slug);
+}
+
+export async function obtenerNegocioPorSlug(
+  slug: string,
+): Promise<NegocioResumen | null> {
+  if (!slugValido(slug)) {
+    return null;
+  }
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("negocios")
+    .select("id, nombre, slug")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) {
+    throw new Error("No se pudo leer negocio");
+  }
+  return data;
+}
+
+export type LoginListaResultado =
+  | { meseros: Array<{ id: string; nombre: string }>; slug: string }
+  | { necesitaRestaurante: true };
+
+/**
+ * Lista pública de meseros para /entrar.
+ * Con slug: solo ese negocio. Sin slug: un negocio único, o pide restaurante.
+ */
+export async function listarLoginPublico(
+  slug: string | null,
+): Promise<LoginListaResultado> {
+  const supabase = createServiceClient();
+
+  if (slug) {
+    const negocio = await obtenerNegocioPorSlug(slug);
+    if (!negocio) {
+      return { meseros: [], slug };
+    }
+    const meseros = await listarMeserosActivosLogin(negocio.id);
+    return { meseros, slug: negocio.slug };
+  }
+
+  const { data: negocios, error } = await supabase
+    .from("negocios")
+    .select("id, slug")
+    .order("created_at", { ascending: true })
+    .limit(2);
+  if (error) {
+    throw new Error("No se pudieron listar negocios");
+  }
+  if (!negocios || negocios.length === 0) {
+    return { meseros: [], slug: "" };
+  }
+  if (negocios.length > 1) {
+    return { necesitaRestaurante: true };
+  }
+  const unico = negocios[0]!;
+  const meseros = await listarMeserosActivosLogin(unico.id);
+  return { meseros, slug: unico.slug };
 }
 
 export type NegocioResumen = {

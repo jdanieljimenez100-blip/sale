@@ -6,31 +6,86 @@ import { Boton } from "@/components/ui/Boton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { apiFetch } from "@/lib/client-api";
 
+export const COOKIE_RESTAURANTE = "sale_restaurante";
+
 type MeseroLogin = { id: string; nombre: string };
 
-export function EntrarPantalla(): ReactElement {
+function leerSlugCookie(): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  const match = document.cookie
+    .split(";")
+    .map((p) => p.trim())
+    .find((p) => p.startsWith(`${COOKIE_RESTAURANTE}=`));
+  if (!match) {
+    return null;
+  }
+  const valor = decodeURIComponent(match.slice(COOKIE_RESTAURANTE.length + 1));
+  return /^[a-z0-9-]{3,40}$/.test(valor) ? valor : null;
+}
+
+function guardarSlugCookie(slug: string): void {
+  const maxAge = 60 * 60 * 24 * 365;
+  document.cookie = `${COOKIE_RESTAURANTE}=${encodeURIComponent(slug)}; path=/; max-age=${maxAge}; samesite=lax`;
+}
+
+export function EntrarPantalla({
+  slugDesdeUrl,
+}: {
+  slugDesdeUrl: string | null;
+}): ReactElement {
   const router = useRouter();
+  const [slug, setSlug] = useState<string | null>(slugDesdeUrl);
   const [meseros, setMeseros] = useState<MeseroLogin[]>([]);
+  const [necesitaRestaurante, setNecesitaRestaurante] = useState(false);
   const [elegido, setElegido] = useState<MeseroLogin | null>(null);
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [listo, setListo] = useState(false);
 
   useEffect(() => {
+    if (slugDesdeUrl) {
+      guardarSlugCookie(slugDesdeUrl);
+      setSlug(slugDesdeUrl);
+    } else {
+      setSlug(leerSlugCookie());
+    }
+    setListo(true);
+  }, [slugDesdeUrl]);
+
+  useEffect(() => {
+    if (!listo) {
+      return;
+    }
     void (async () => {
+      setLoading(true);
       try {
-        const data = await apiFetch<{ meseros: MeseroLogin[] }>(
-          "/api/auth/login-lista",
-        );
-        setMeseros(data.meseros);
+        const q = slug ? `?r=${encodeURIComponent(slug)}` : "";
+        const data = await apiFetch<
+          | { meseros: MeseroLogin[]; slug?: string }
+          | { necesitaRestaurante: true }
+        >(`/api/auth/login-lista${q}`);
+        if ("necesitaRestaurante" in data && data.necesitaRestaurante) {
+          setNecesitaRestaurante(true);
+          setMeseros([]);
+        } else if ("meseros" in data) {
+          setNecesitaRestaurante(false);
+          setMeseros(data.meseros);
+          if (data.slug) {
+            setSlug(data.slug);
+            guardarSlugCookie(data.slug);
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error");
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [listo, slug]);
 
   function digito(d: string): void {
     setPin((p) => (p.length >= 6 ? p : p + d));
@@ -44,9 +99,16 @@ export function EntrarPantalla(): ReactElement {
     setBusy(true);
     setError(null);
     try {
+      const body: { meseroId: string; pin: string; r?: string } = {
+        meseroId: elegido.id,
+        pin,
+      };
+      if (slug) {
+        body.r = slug;
+      }
       await apiFetch("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ meseroId: elegido.id, pin }),
+        body: JSON.stringify(body),
       });
       router.replace("/cuentas");
     } catch (err) {
@@ -57,12 +119,29 @@ export function EntrarPantalla(): ReactElement {
     }
   }
 
-  if (loading) {
+  if (!listo || loading) {
     return (
       <div className="flex flex-col gap-3" aria-busy="true">
         <Skeleton className="h-10 w-32" />
         <Skeleton className="h-14 w-full" />
         <Skeleton className="h-14 w-full" />
+      </div>
+    );
+  }
+
+  if (necesitaRestaurante) {
+    return (
+      <div className="flex flex-col gap-4">
+        <header>
+          <p className="text-[15px] font-semibold text-primario">Sale</p>
+          <h1 className="mt-2 text-[32px] font-semibold text-tinta text-pretty">
+            Elige tu restaurante
+          </h1>
+          <p className="mt-2 text-[15px] text-tinta-suave">
+            Abre el enlace que te compartió tu admin (lleva el nombre del
+            restaurante en la dirección).
+          </p>
+        </header>
       </div>
     );
   }

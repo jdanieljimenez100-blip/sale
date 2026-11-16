@@ -9,7 +9,9 @@ import {
   type ReporteDesempeno,
   type ResenaParaReporte,
 } from "@/lib/reporte";
+import { formatearFechaPagoCdmx } from "@/lib/ticket";
 import { createServiceClient } from "@/lib/supabase/server";
+import { peyUlidUltimos4 } from "@/services/bitacora";
 
 export type {
   FilaMeseroReporte,
@@ -25,6 +27,15 @@ export {
   formatearSegundosPromedio,
   ratioONull,
 } from "@/lib/reporte";
+
+export type PagoReporteFila = {
+  hora: string;
+  mesa: string;
+  mesero: string;
+  tipo: "consumo" | "propina";
+  montoCentavos: number;
+  peyUltimos4: string | null;
+};
 
 type ResenaSelect = {
   id: string;
@@ -115,4 +126,75 @@ export async function obtenerReporteDesempeno(
     repartoCocinaPct: negocio?.reparto_cocina_pct ?? 0,
   });
   return filtrarReportePorSesion(completo, sesion);
+}
+
+/** Cobros pagados en el rango (CDMX), listos para exportar o imprimir. */
+export async function listarPagosRango(
+  rangoDias: RangoReporteDias,
+  sesion: { meseroId: string; rol: RolSesion },
+): Promise<PagoReporteFila[]> {
+  const desde = inicioRangoMexicoCity(rangoDias);
+  const supabase = createServiceClient();
+
+  let query = supabase
+    .from("cobros")
+    .select(
+      "cuenta_id, mesero_id, tipo, monto_centavos, pey_transaction_id, pagado_at",
+    )
+    .eq("estado", "pagado")
+    .gte("pagado_at", desde.toISOString())
+    .order("pagado_at", { ascending: true });
+
+  if (sesion.rol === "mesero") {
+    query = query.eq("mesero_id", sesion.meseroId);
+  }
+
+  const [{ data: cobros, error: cobrosError }, { data: meseros, error: meserosError }] =
+    await Promise.all([query, supabase.from("meseros").select("id, nombre")]);
+
+  if (cobrosError || meserosError) {
+    throw new Error("No se pudo listar los pagos del reporte");
+  }
+
+  const lista = cobros ?? [];
+  const cuentaIds = [
+    ...new Set(
+      lista
+        .map((c) => c.cuenta_id)
+        .filter((id): id is string => typeof id === "string"),
+    ),
+  ];
+
+  let cuentas: Array<{ id: string; mesa: string }> = [];
+  if (cuentaIds.length > 0) {
+    const { data } = await supabase
+      .from("cuentas")
+      .select("id, mesa")
+      .in("id", cuentaIds);
+    cuentas = data ?? [];
+  }
+
+  const mesaPorCuenta = new Map(cuentas.map((c) => [c.id, c.mesa] as const));
+  const nombrePorMesero = new Map(
+    (meseros ?? []).map((m) => [m.id, m.nombre] as const),
+  );
+
+  return lista.map((c) => {
+    const mesaLabel =
+      c.cuenta_id == null
+        ? "Cobro rápido"
+        : (mesaPorCuenta.get(c.cuenta_id) ?? "—");
+    const meseroNombre =
+      c.mesero_id == null
+        ? "—"
+        : (nombrePorMesero.get(c.mesero_id) ?? "Mesero");
+    return {
+      hora: c.pagado_at ? formatearFechaPagoCdmx(c.pagado_at) : "—",
+      mesa: mesaLabel,
+      mesero: meseroNombre,
+      tipo: c.tipo,
+      montoCentavos: c.monto_centavos,
+      peyUltimos4: peyUlidUltimos4(c.pey_transaction_id),
+    };
+  });
 }

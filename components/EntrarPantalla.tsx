@@ -159,12 +159,25 @@ export function EntrarPantalla({
   enviarRef.current = enviarPin;
 
   useEffect(() => {
-    const root = pasoRootRef.current;
-    if (!root || loading) {
-      return;
+    if (loading) {
+      return undefined;
     }
-    const heading = root.querySelector<HTMLElement>("h1");
-    heading?.focus({ preventScroll: true });
+    const frame = window.requestAnimationFrame(() => {
+      const root = pasoRootRef.current;
+      if (!root) {
+        return;
+      }
+      const heading = root.querySelector<HTMLElement>("h1");
+      if (heading) {
+        heading.focus({ preventScroll: true });
+        return;
+      }
+      const primero = root.querySelector<HTMLElement>(
+        "input:not([disabled]), button:not([disabled]), a[href]",
+      );
+      primero?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [paso, loading, pedirCodigo, negocio]);
 
   useEffect(() => {

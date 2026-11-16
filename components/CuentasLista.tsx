@@ -15,7 +15,6 @@ import { useSesion } from "@/components/SesionContext";
 import { Monto } from "@/components/ui/Monto";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { apiFetch } from "@/lib/client-api";
-import { getBrowserSupabase } from "@/lib/supabase/browser";
 import type { EstadoCuenta } from "@/lib/supabase/types";
 import type { CuentaListaItem, ResumenMesas } from "@/services/cuentas";
 
@@ -58,30 +57,8 @@ export function CuentasLista(): ReactElement {
       void cargar();
     }, 2000);
 
-    let channel: ReturnType<
-      ReturnType<typeof getBrowserSupabase>["channel"]
-    > | null = null;
-    try {
-      const supabase = getBrowserSupabase();
-      channel = supabase
-        .channel("cuentas-live")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "cuentas" },
-          () => {
-            void cargar();
-          },
-        )
-        .subscribe();
-    } catch {
-      // Polling cubre la demo.
-    }
-
     return () => {
       window.clearInterval(timer);
-      if (channel) {
-        void getBrowserSupabase().removeChannel(channel);
-      }
     };
   }, [cargar]);
 

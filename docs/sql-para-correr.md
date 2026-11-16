@@ -116,6 +116,25 @@ no cambia; el RPC rellena `cobros.negocio_id` solo).
 - DROP policies `*_select_public` y `REVOKE SELECT` de anon/authenticated
   sobre cuentas, partidas, cobros, meseros, negocios.
 
+## 16) pey por negocio (llaves cifradas + RPCs con negocio)
+
+`supabase/migrations/20261119_pey_por_negocio.sql`
+
+Puede correrse **antes** del deploy de la app (conserva `sale_insert_cobro`
+y el `sale_mark_cobro_pagado` de 4 args; la app nueva usa los RPCs con
+`p_negocio_id`).
+
+- Columnas en `negocios`: `pey_api_key_cifrada`, `pey_webhook_secret_cifrado`,
+  `pey_api_key_ultimos4`, `pey_api_key_id`, `pey_webhook_ultimo_at`,
+  `usa_pey_entorno` (default false; `slug = 'demo'` → true),
+  `pey_bank_account_codi_status`.
+- RPC nueva `sale_crear_cobro(..., p_negocio_id)`: valida cuenta/mesero
+  (o admin en `negocio_accesos`) e inserta con ese `negocio_id`.
+  `sale_insert_cobro` se conserva (borrar en Fase 3c).
+- Overload `sale_mark_cobro_pagado(..., p_negocio_id)`: solo marca si
+  `cobros.negocio_id` coincide; si no, `applied=false` y `cobro_id` null.
+- REVOKE PUBLIC/anon/authenticated; GRANT service_role en RPCs nuevas.
+
 ## Verificación
 
 ```sql

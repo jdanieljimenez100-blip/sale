@@ -11,6 +11,13 @@ export type Database = {
           nombre: string;
           slug: string;
           pey_bank_account_id: string | null;
+          pey_bank_account_codi_status: string | null;
+          pey_api_key_cifrada: string | null;
+          pey_webhook_secret_cifrado: string | null;
+          pey_api_key_ultimos4: string | null;
+          pey_api_key_id: string | null;
+          pey_webhook_ultimo_at: string | null;
+          usa_pey_entorno: boolean;
           propina_porcentajes: number[];
           reparto_cocina_pct: number;
           created_at: string;
@@ -20,6 +27,13 @@ export type Database = {
           nombre: string;
           slug: string;
           pey_bank_account_id?: string | null;
+          pey_bank_account_codi_status?: string | null;
+          pey_api_key_cifrada?: string | null;
+          pey_webhook_secret_cifrado?: string | null;
+          pey_api_key_ultimos4?: string | null;
+          pey_api_key_id?: string | null;
+          pey_webhook_ultimo_at?: string | null;
+          usa_pey_entorno?: boolean;
           propina_porcentajes?: number[];
           reparto_cocina_pct?: number;
           created_at?: string;
@@ -29,6 +43,13 @@ export type Database = {
           nombre?: string;
           slug?: string;
           pey_bank_account_id?: string | null;
+          pey_bank_account_codi_status?: string | null;
+          pey_api_key_cifrada?: string | null;
+          pey_webhook_secret_cifrado?: string | null;
+          pey_api_key_ultimos4?: string | null;
+          pey_api_key_id?: string | null;
+          pey_webhook_ultimo_at?: string | null;
+          usa_pey_entorno?: boolean;
           propina_porcentajes?: number[];
           reparto_cocina_pct?: number;
           created_at?: string;
@@ -340,18 +361,33 @@ export type Database = {
         };
         Returns: Database["public"]["Tables"]["cobros"]["Row"];
       };
+      sale_crear_cobro: {
+        Args: {
+          p_cuenta_id: string | null;
+          p_mesero_id: string | null;
+          p_tipo: TipoCobro;
+          p_monto_centavos: number;
+          p_pey_qr_id: string;
+          p_qr_string: string;
+          p_concepto: string;
+          p_cobro_origen_id?: string | null;
+          p_negocio_id: string;
+        };
+        Returns: Database["public"]["Tables"]["cobros"]["Row"];
+      };
       sale_mark_cobro_pagado: {
         Args: {
           p_pey_qr_id: string;
           p_event_id: string;
           p_transaction_id: string;
           p_pagado_at: string;
+          p_negocio_id?: string;
         };
         Returns: Array<{
           applied: boolean;
-          cobro_id: string;
+          cobro_id: string | null;
           cuenta_id: string | null;
-          tipo: TipoCobro;
+          tipo: TipoCobro | null;
         }>;
       };
       sale_set_cuenta_estado: {

@@ -5,6 +5,7 @@ import type {
   CrearCobroInput,
   CrearCobroResult,
   PeyClient,
+  PeyCuentaBancariaResumen,
   PeyWebhookPayload,
   VerificarWebhookResult,
 } from "@/lib/pey/types";
@@ -55,6 +56,14 @@ export function createMockPeyClient(): PeyClient {
       const eventId =
         request.headers.get("webhook-id") ?? `mock_event_${payload.transactionId}`;
       return { eventId, payload };
+    },
+
+    obtenerCuentaBancaria(id: string): Promise<PeyCuentaBancariaResumen | null> {
+      return Promise.resolve({
+        id,
+        alias: "mock",
+        codiStatus: "ACTIVE",
+      });
     },
   };
 }

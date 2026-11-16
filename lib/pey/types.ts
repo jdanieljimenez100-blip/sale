@@ -29,7 +29,22 @@ export type VerificarWebhookResult = {
   payload: PeyWebhookPayload;
 };
 
+/** Solo campos seguros de GET /bank-account/:id (nunca CLABE). */
+export type PeyCuentaBancariaResumen = {
+  id: string;
+  alias: string | null;
+  codiStatus: string | null;
+};
+
 export type PeyClient = {
   crearCobro: (input: CrearCobroInput) => Promise<CrearCobroResult>;
   verificarWebhook: (request: Request) => Promise<VerificarWebhookResult>;
+  obtenerCuentaBancaria: (
+    id: string,
+  ) => Promise<PeyCuentaBancariaResumen | null>;
+};
+
+export type PeyClientCredentials = {
+  apiKey: string;
+  webhookSecret: string;
 };

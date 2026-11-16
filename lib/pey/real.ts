@@ -1,11 +1,12 @@
 import { Webhook } from "standardwebhooks";
-import { getServerEnv } from "@/lib/env";
 import { centavosParaPey } from "@/lib/pey/money-bridge";
 import { normalizarNumRef } from "@/lib/pey/num-ref";
 import type {
   CrearCobroInput,
   CrearCobroResult,
   PeyClient,
+  PeyClientCredentials,
+  PeyCuentaBancariaResumen,
   PeyWebhookPayload,
   VerificarWebhookResult,
 } from "@/lib/pey/types";
@@ -26,13 +27,29 @@ function isCreateQrResponse(value: unknown): value is PeyCreateQrResponse {
   );
 }
 
-export function createRealPeyClient(): PeyClient {
+function resumenCuentaBancaria(
+  value: unknown,
+): PeyCuentaBancariaResumen | null {
+  if (typeof value !== "object" || value === null || !("id" in value)) {
+    return null;
+  }
+  const obj = value as Record<string, unknown>;
+  if (typeof obj.id !== "string") {
+    return null;
+  }
+  return {
+    id: obj.id,
+    alias: typeof obj.alias === "string" ? obj.alias : null,
+    codiStatus: typeof obj.codiStatus === "string" ? obj.codiStatus : null,
+  };
+}
+
+export function createRealPeyClient(config: PeyClientCredentials): PeyClient {
   return {
     async crearCobro(input: CrearCobroInput): Promise<CrearCobroResult> {
-      const env = getServerEnv();
-      const apiKey = env.PEY_API_KEY;
+      const apiKey = config.apiKey;
       if (!apiKey) {
-        throw new Error("Falta PEY_API_KEY");
+        throw new Error("Falta API key de pey");
       }
       const amountPesos = centavosParaPey(input.montoCentavos);
       const body: Record<string, string | number> = {
@@ -75,10 +92,9 @@ export function createRealPeyClient(): PeyClient {
     },
 
     async verificarWebhook(request: Request): Promise<VerificarWebhookResult> {
-      const env = getServerEnv();
-      const secret = env.PEY_WEBHOOK_SECRET;
+      const secret = config.webhookSecret;
       if (!secret) {
-        throw new Error("Falta PEY_WEBHOOK_SECRET");
+        throw new Error("Falta webhook secret de pey");
       }
       const rawBody = await request.text();
       const headers: Record<string, string> = {};
@@ -108,6 +124,30 @@ export function createRealPeyClient(): PeyClient {
         throw new Error("Falta header webhook-id");
       }
       return { eventId, payload };
+    },
+
+    async obtenerCuentaBancaria(
+      id: string,
+    ): Promise<PeyCuentaBancariaResumen | null> {
+      const apiKey = config.apiKey;
+      if (!apiKey) {
+        throw new Error("Falta API key de pey");
+      }
+      const response = await fetch(`https://api.pey.mx/bank-account/${id}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: "application/json",
+        },
+      });
+      if (response.status === 404) {
+        return null;
+      }
+      if (!response.ok) {
+        throw new Error(`pey bank-account falló (${response.status})`);
+      }
+      const json: unknown = await response.json();
+      return resumenCuentaBancaria(json);
     },
   };
 }

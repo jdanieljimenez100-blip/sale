@@ -1,6 +1,5 @@
 import type { RolSesion } from "@/lib/auth/sesion";
 import { inicioDelDiaMexicoCity } from "@/lib/dia-mexico";
-import { getServerEnv } from "@/lib/env";
 import { puedeModificarMesa } from "@/lib/mesa-reglas";
 import { getPeyClient } from "@/lib/pey";
 import type { PeyWebhookPayload } from "@/lib/pey";
@@ -9,11 +8,13 @@ import { montoAlRegenerarConsumo } from "@/lib/qr-estado";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database, TipoCobro } from "@/lib/supabase/types";
 import { obtenerCuenta, recalcularEstadoCuenta } from "@/services/cuentas";
+import { obtenerConfigPey } from "@/services/pey-config";
 import { resolverDestinoPropina } from "@/services/propina-destino";
 
 type CobroRow = Database["public"]["Tables"]["cobros"]["Row"];
 
 export type CrearCobroAppInput = {
+  negocioId: string;
   cuentaId?: string;
   meseroId?: string;
   tipo: TipoCobro;
@@ -32,20 +33,23 @@ export async function crearCobroApp(
     throw new Error("Monto inválido");
   }
 
+  const config = await obtenerConfigPey(input.negocioId);
+
   let bankAccountId = input.bankAccountId;
   if (!bankAccountId) {
     if (input.tipo === "propina") {
       const destino = await resolverDestinoPropina({
         meseroId: input.meseroId,
         cuentaId: input.cuentaId,
+        negocioId: input.negocioId,
       });
       bankAccountId = destino.bankAccountId;
     } else {
-      bankAccountId = getServerEnv().PEY_BANK_ACCOUNT_RESTAURANTE;
+      bankAccountId = config.bankAccountRestaurante;
     }
   }
 
-  const pey = getPeyClient();
+  const pey = await getPeyClient(input.negocioId);
   const creado = await pey.crearCobro({
     montoCentavos: input.montoCentavos,
     concepto: input.concepto,
@@ -54,7 +58,7 @@ export async function crearCobroApp(
   });
 
   const supabase = createServiceClient();
-  const { data, error } = await supabase.rpc("sale_insert_cobro", {
+  const { data, error } = await supabase.rpc("sale_crear_cobro", {
     p_cuenta_id: input.cuentaId ?? null,
     p_mesero_id: input.meseroId ?? null,
     p_tipo: input.tipo,
@@ -63,6 +67,7 @@ export async function crearCobroApp(
     p_qr_string: creado.qrString,
     p_concepto: input.concepto,
     p_cobro_origen_id: input.cobroOrigenId ?? null,
+    p_negocio_id: input.negocioId,
   });
 
   if (error || !data) {
@@ -110,6 +115,7 @@ export async function regenerarCobro(cobroId: string): Promise<CobroRow> {
   }
 
   return crearCobroApp({
+    negocioId: actual.negocio_id,
     cuentaId: actual.cuenta_id ?? undefined,
     meseroId: actual.mesero_id ?? undefined,
     tipo: actual.tipo,
@@ -169,6 +175,7 @@ export async function obtenerCobroPorPeyQrId(
 export async function aplicarPagoWebhook(args: {
   eventId: string;
   payload: PeyWebhookPayload;
+  negocioId: string;
 }): Promise<{ applied: boolean; cobroId: string | null }> {
   const supabase = createServiceClient();
   const { data, error } = await supabase.rpc("sale_mark_cobro_pagado", {
@@ -176,6 +183,7 @@ export async function aplicarPagoWebhook(args: {
     p_event_id: args.eventId,
     p_transaction_id: args.payload.transactionId,
     p_pagado_at: new Date(args.payload.datePaid * 1000).toISOString(),
+    p_negocio_id: args.negocioId,
   });
 
   if (error) {
@@ -207,7 +215,7 @@ export async function expirarConsumoPendiente(cuentaId: string): Promise<number>
 
 export async function cobrarTotalCuenta(
   cuentaId: string,
-  sesion: { meseroId: string; rol: RolSesion },
+  sesion: { meseroId: string; rol: RolSesion; negocioId: string },
 ): Promise<CobroRow> {
   const cuenta = await obtenerCuenta(cuentaId);
   if (!cuenta) {
@@ -224,6 +232,7 @@ export async function cobrarTotalCuenta(
   }
   await expirarConsumoPendiente(cuentaId);
   return crearCobroApp({
+    negocioId: sesion.negocioId,
     cuentaId,
     meseroId: cuenta.mesero_id,
     tipo: "consumo",

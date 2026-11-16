@@ -10,10 +10,12 @@ export { avanceDivision };
 type CobroRow = Database["public"]["Tables"]["cobros"]["Row"];
 type SesionMesa = { meseroId: string; rol: RolSesion };
 
+type SesionCobro = SesionMesa & { negocioId: string };
+
 export async function dividirCuentaIgual(
   cuentaId: string,
   partes: number,
-  sesion: SesionMesa,
+  sesion: SesionCobro,
 ): Promise<CobroRow[]> {
   if (!Number.isInteger(partes) || partes < 2) {
     throw new Error("Se necesitan al menos 2 partes");
@@ -46,6 +48,7 @@ export async function dividirCuentaIgual(
       continue;
     }
     const cobro = await crearCobroApp({
+      negocioId: sesion.negocioId,
       cuentaId,
       meseroId: cuenta.mesero_id,
       tipo: "consumo",
@@ -61,7 +64,7 @@ export async function dividirCuentaIgual(
 export async function dividirCuentaPorMontos(
   cuentaId: string,
   montosCentavos: number[],
-  sesion: SesionMesa,
+  sesion: SesionCobro,
 ): Promise<CobroRow[]> {
   if (montosCentavos.length < 2) {
     throw new Error("Se necesitan al menos 2 montos");
@@ -92,6 +95,7 @@ export async function dividirCuentaPorMontos(
       continue;
     }
     const cobro = await crearCobroApp({
+      negocioId: sesion.negocioId,
       cuentaId,
       meseroId: cuenta.mesero_id,
       tipo: "consumo",

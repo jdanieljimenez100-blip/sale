@@ -23,6 +23,7 @@ export async function GET(
     const destino = await resolverDestinoPropina({
       meseroId: cobro.mesero_id,
       cuentaId: cobro.cuenta_id,
+      negocioId: cobro.negocio_id,
     });
     const porcentajes = await porcentajesPropinaPorCuenta(cobro.cuenta_id);
     return NextResponse.json({

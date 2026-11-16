@@ -1,6 +1,6 @@
-import { getServerEnv } from "@/lib/env";
 import { obtenerMesero } from "@/services/meseros";
 import { obtenerCuenta } from "@/services/cuentas";
+import { obtenerConfigPey } from "@/services/pey-config";
 
 export type DestinoPropina = {
   bankAccountId: string | undefined;
@@ -14,8 +14,8 @@ export type DestinoPropina = {
 export async function resolverDestinoPropina(input: {
   meseroId: string | null | undefined;
   cuentaId: string | null | undefined;
+  negocioId: string;
 }): Promise<DestinoPropina> {
-  const env = getServerEnv();
   let meseroNombre = "el mesero";
   let tieneCuentaMesero = false;
   let bankFromMesero: string | undefined;
@@ -39,8 +39,13 @@ export async function resolverDestinoPropina(input: {
     }
   }
 
-  const bankAccountId =
-    bankFromMesero ?? env.PEY_BANK_ACCOUNT_RESTAURANTE ?? undefined;
+  let bankRestaurant: string | undefined;
+  if (!bankFromMesero) {
+    const config = await obtenerConfigPey(input.negocioId);
+    bankRestaurant = config.bankAccountRestaurante;
+  }
+
+  const bankAccountId = bankFromMesero ?? bankRestaurant;
 
   const mensaje = tieneCuentaMesero
     ? `Va directo a ${meseroNombre}`

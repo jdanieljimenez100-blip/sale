@@ -73,11 +73,13 @@ export async function crearPropinaDesdeConsumo(input: {
   const destino = await resolverDestinoPropina({
     meseroId: consumo.mesero_id,
     cuentaId: consumo.cuenta_id,
+    negocioId: consumo.negocio_id,
   });
   const mesa = destino.mesa ?? "?";
   const concepto = `Propina · Mesa ${mesa} · ${destino.meseroNombre}`;
 
   const cobro = await crearCobroApp({
+    negocioId: consumo.negocio_id,
     cuentaId: consumo.cuenta_id ?? undefined,
     meseroId: consumo.mesero_id ?? undefined,
     tipo: "propina",

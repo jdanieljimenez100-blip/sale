@@ -59,6 +59,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const cobro = await crearCobroApp({
       ...input,
       meseroId,
+      negocioId: sesion.negocioId,
     });
     return NextResponse.json({ cobro });
   } catch (error) {

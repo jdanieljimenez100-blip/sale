@@ -22,9 +22,11 @@ WHERE id NOT IN (
   '33333333-3333-3333-3333-333333333303'
 );
 
-INSERT INTO public.negocios (id, nombre, pey_bank_account_id)
-VALUES ('11111111-1111-1111-1111-111111111111', 'Taquería Demo Sale', NULL)
-ON CONFLICT (id) DO UPDATE SET nombre = EXCLUDED.nombre;
+INSERT INTO public.negocios (id, nombre, slug, pey_bank_account_id)
+VALUES ('11111111-1111-1111-1111-111111111111', 'Taquería Demo Sale', 'demo', NULL)
+ON CONFLICT (id) DO UPDATE SET
+  nombre = EXCLUDED.nombre,
+  slug = COALESCE(public.negocios.slug, EXCLUDED.slug);
 
 INSERT INTO public.meseros (id, negocio_id, nombre)
 VALUES

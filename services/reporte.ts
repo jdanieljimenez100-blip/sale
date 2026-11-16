@@ -48,10 +48,11 @@ type ResenaSelect = {
 
 export async function obtenerReporteDesempeno(
   rangoDias: RangoReporteDias,
-  sesion: { meseroId: string; rol: RolSesion },
+  sesion: { meseroId: string; rol: RolSesion; negocioId: string },
 ): Promise<ReporteDesempeno> {
   const desde = inicioRangoMexicoCity(rangoDias);
   const supabase = createServiceClient();
+  const negocioId = sesion.negocioId;
 
   const [
     { data: cobros, error: cobrosError },
@@ -63,13 +64,17 @@ export async function obtenerReporteDesempeno(
       .select(
         "id, mesero_id, cuenta_id, tipo, monto_centavos, cobro_origen_id, created_at, pagado_at",
       )
+      .eq("negocio_id", negocioId)
       .eq("estado", "pagado")
       .gte("pagado_at", desde.toISOString()),
-    supabase.from("meseros").select("id, nombre"),
+    supabase
+      .from("meseros")
+      .select("id, nombre")
+      .eq("negocio_id", negocioId),
     supabase
       .from("negocios")
       .select("reparto_cocina_pct")
-      .eq("id", "11111111-1111-1111-1111-111111111111")
+      .eq("id", negocioId)
       .maybeSingle(),
   ]);
 
@@ -101,6 +106,7 @@ export async function obtenerReporteDesempeno(
     const { data } = await supabase
       .from("cuentas")
       .select("id, mesa")
+      .eq("negocio_id", negocioId)
       .in("id", cuentaIds);
     cuentas = data ?? [];
   }
@@ -131,16 +137,18 @@ export async function obtenerReporteDesempeno(
 /** Cobros pagados en el rango (CDMX), listos para exportar o imprimir. */
 export async function listarPagosRango(
   rangoDias: RangoReporteDias,
-  sesion: { meseroId: string; rol: RolSesion },
+  sesion: { meseroId: string; rol: RolSesion; negocioId: string },
 ): Promise<PagoReporteFila[]> {
   const desde = inicioRangoMexicoCity(rangoDias);
   const supabase = createServiceClient();
+  const negocioId = sesion.negocioId;
 
   let query = supabase
     .from("cobros")
     .select(
       "cuenta_id, mesero_id, tipo, monto_centavos, pey_transaction_id, pagado_at",
     )
+    .eq("negocio_id", negocioId)
     .eq("estado", "pagado")
     .gte("pagado_at", desde.toISOString())
     .order("pagado_at", { ascending: true });
@@ -150,7 +158,13 @@ export async function listarPagosRango(
   }
 
   const [{ data: cobros, error: cobrosError }, { data: meseros, error: meserosError }] =
-    await Promise.all([query, supabase.from("meseros").select("id, nombre")]);
+    await Promise.all([
+      query,
+      supabase
+        .from("meseros")
+        .select("id, nombre")
+        .eq("negocio_id", negocioId),
+    ]);
 
   if (cobrosError || meserosError) {
     throw new Error("No se pudo listar los pagos del reporte");
@@ -170,6 +184,7 @@ export async function listarPagosRango(
     const { data } = await supabase
       .from("cuentas")
       .select("id, mesa")
+      .eq("negocio_id", negocioId)
       .in("id", cuentaIds);
     cuentas = data ?? [];
   }

@@ -124,38 +124,15 @@ export async function nombreNegocioDeCobro(
   cobro: CobroRow,
 ): Promise<string> {
   const supabase = createServiceClient();
-  if (cobro.cuenta_id) {
-    const { data: cuenta } = await supabase
-      .from("cuentas")
-      .select("negocio_id")
-      .eq("id", cobro.cuenta_id)
+  const negocioId = cobro.negocio_id;
+  if (negocioId) {
+    const { data: negocio } = await supabase
+      .from("negocios")
+      .select("nombre")
+      .eq("id", negocioId)
       .maybeSingle();
-    if (cuenta?.negocio_id) {
-      const { data: negocio } = await supabase
-        .from("negocios")
-        .select("nombre")
-        .eq("id", cuenta.negocio_id)
-        .maybeSingle();
-      if (negocio?.nombre) {
-        return negocio.nombre;
-      }
-    }
-  }
-  if (cobro.mesero_id) {
-    const { data: mesero } = await supabase
-      .from("meseros")
-      .select("negocio_id")
-      .eq("id", cobro.mesero_id)
-      .maybeSingle();
-    if (mesero?.negocio_id) {
-      const { data: negocio } = await supabase
-        .from("negocios")
-        .select("nombre")
-        .eq("id", mesero.negocio_id)
-        .maybeSingle();
-      if (negocio?.nombre) {
-        return negocio.nombre;
-      }
+    if (negocio?.nombre) {
+      return negocio.nombre;
     }
   }
   return "Sale";
@@ -256,12 +233,16 @@ export async function cobrarTotalCuenta(
   });
 }
 
-export async function listarPropinasMesero(meseroId: string): Promise<CobroRow[]> {
+export async function listarPropinasMesero(
+  meseroId: string,
+  negocioId: string,
+): Promise<CobroRow[]> {
   const supabase = createServiceClient();
   const inicioHoy = inicioDelDiaMexicoCity();
   const { data, error } = await supabase
     .from("cobros")
     .select("*")
+    .eq("negocio_id", negocioId)
     .eq("mesero_id", meseroId)
     .eq("tipo", "propina")
     .eq("estado", "pagado")

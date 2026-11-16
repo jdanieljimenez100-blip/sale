@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
+import { assertMismoNegocio } from "@/lib/auth/assert-negocio";
 import { requireSesion } from "@/lib/auth/require";
+import { obtenerCobro } from "@/services/cobros";
 import { crearPropinaDesdeConsumo } from "@/services/propinas";
 
 type Params = { params: Promise<{ id: string }> };
@@ -17,8 +19,13 @@ export async function POST(
   context: Params,
 ): Promise<NextResponse> {
   try {
-    await requireSesion(request);
+    const sesion = await requireSesion(request);
     const { id } = await context.params;
+    const actual = await obtenerCobro(id);
+    if (!actual) {
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    }
+    assertMismoNegocio(actual.negocio_id, sesion.negocioId);
     const json: unknown = await request.json();
     const body = bodySchema.parse(json);
 

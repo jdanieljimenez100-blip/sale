@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { HttpError, jsonError } from "@/lib/api-error";
+import { assertMismoNegocio } from "@/lib/auth/assert-negocio";
 import { requireSesion } from "@/lib/auth/require";
 import { puedeModificarMesa } from "@/lib/mesa-reglas";
 import { obtenerCuenta } from "@/services/cuentas";
@@ -16,8 +17,9 @@ export async function GET(
     const { id } = await context.params;
     const cuenta = await obtenerCuenta(id);
     if (!cuenta) {
-      throw new HttpError("Cuenta no encontrada", 404);
+      throw new HttpError("No encontrado", 404);
     }
+    assertMismoNegocio(cuenta.negocio_id, sesion.negocioId);
     puedeModificarMesa({
       rol: sesion.rol,
       sesionMeseroId: sesion.meseroId,

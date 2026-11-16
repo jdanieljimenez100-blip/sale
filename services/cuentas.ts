@@ -28,7 +28,9 @@ export type ResumenMesas = {
 
 export { calcularEstadoCuenta };
 
-export async function listarCuentasConResumen(): Promise<{
+export async function listarCuentasConResumen(
+  negocioId: string,
+): Promise<{
   cuentas: CuentaListaItem[];
   cerradasHoy: CuentaListaItem[];
   resumen: ResumenMesas;
@@ -46,23 +48,30 @@ export async function listarCuentasConResumen(): Promise<{
     supabase
       .from("cuentas")
       .select("*")
+      .eq("negocio_id", negocioId)
       .is("cerrada_at", null)
       .order("mesa", { ascending: true }),
     supabase
       .from("cuentas")
       .select("*")
+      .eq("negocio_id", negocioId)
       .not("cerrada_at", "is", null)
       .gte("cerrada_at", inicioHoy.toISOString())
       .order("cerrada_at", { ascending: false }),
-    supabase.from("meseros").select("id, nombre"),
+    supabase
+      .from("meseros")
+      .select("id, nombre")
+      .eq("negocio_id", negocioId),
     supabase
       .from("cobros")
       .select("cuenta_id, tipo, estado, monto_centavos")
+      .eq("negocio_id", negocioId)
       .eq("tipo", "consumo")
       .eq("estado", "pagado"),
     supabase
       .from("cobros")
       .select("monto_centavos")
+      .eq("negocio_id", negocioId)
       .eq("estado", "pagado")
       .gte("pagado_at", inicioHoy.toISOString()),
   ]);
@@ -106,8 +115,8 @@ export async function listarCuentasConResumen(): Promise<{
   return { cuentas: items, cerradasHoy, resumen };
 }
 
-export async function listarCuentas(): Promise<CuentaRow[]> {
-  const { cuentas } = await listarCuentasConResumen();
+export async function listarCuentas(negocioId: string): Promise<CuentaRow[]> {
+  const { cuentas } = await listarCuentasConResumen(negocioId);
   return cuentas;
 }
 
@@ -163,7 +172,6 @@ export async function recalcularEstadoCuenta(cuentaId: string): Promise<EstadoCu
   if (!detalle) {
     throw new Error("Cuenta no encontrada");
   }
-  // Usa sale_recalc_cuenta para totals + ticket al pasar a pagada.
   const supabase = createServiceClient();
   const { data, error } = await supabase.rpc("sale_recalc_cuenta", {
     p_cuenta_id: cuentaId,

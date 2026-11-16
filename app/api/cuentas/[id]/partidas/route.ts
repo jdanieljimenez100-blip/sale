@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { HttpError, jsonError } from "@/lib/api-error";
+import { assertMismoNegocio } from "@/lib/auth/assert-negocio";
 import { requireSesion } from "@/lib/auth/require";
 import {
   esPartidaMenu,
   partidaBodySchema,
 } from "@/lib/partida-input";
+import { obtenerCuenta } from "@/services/cuentas";
 import { agregarPartida } from "@/services/mesas";
 
 type Params = { params: Promise<{ id: string }> };
@@ -16,6 +18,12 @@ export async function POST(
   try {
     const sesion = await requireSesion(request);
     const { id } = await context.params;
+    const cuentaExistente = await obtenerCuenta(id);
+    if (!cuentaExistente) {
+      throw new HttpError("No encontrado", 404);
+    }
+    assertMismoNegocio(cuentaExistente.negocio_id, sesion.negocioId);
+
     const json: unknown = await request.json();
     const body = partidaBodySchema.parse(json);
 

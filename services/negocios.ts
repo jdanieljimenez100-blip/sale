@@ -9,8 +9,6 @@ import { registrarBitacora } from "@/services/bitacora";
 
 type NegocioRow = Database["public"]["Tables"]["negocios"]["Row"];
 
-const NEGOCIO_DEMO_ID = "11111111-1111-1111-1111-111111111111";
-
 export type ConfigPropinasNegocio = {
   propinaPorcentajes: number[];
   repartoCocinaPct: number;
@@ -18,12 +16,14 @@ export type ConfigPropinasNegocio = {
 
 export { validarPropinaPorcentajes, validarRepartoCocinaPct };
 
-export async function obtenerNegocioDemo(): Promise<NegocioRow> {
+export async function obtenerNegocio(
+  negocioId: string,
+): Promise<NegocioRow> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("negocios")
     .select("*")
-    .eq("id", NEGOCIO_DEMO_ID)
+    .eq("id", negocioId)
     .maybeSingle();
   if (error || !data) {
     throw new Error("No se encontró el negocio");
@@ -31,9 +31,11 @@ export async function obtenerNegocioDemo(): Promise<NegocioRow> {
   return data;
 }
 
-export async function obtenerConfigPropinasNegocio(): Promise<ConfigPropinasNegocio> {
+export async function obtenerConfigPropinasNegocio(
+  negocioId: string,
+): Promise<ConfigPropinasNegocio> {
   try {
-    const negocio = await obtenerNegocioDemo();
+    const negocio = await obtenerNegocio(negocioId);
     const porcentajes =
       negocio.propina_porcentajes?.length > 0
         ? [...negocio.propina_porcentajes]
@@ -77,6 +79,7 @@ export async function porcentajesPropinaPorCuenta(
 }
 
 export async function actualizarConfigPropinas(input: {
+  negocioId: string;
   propinaPorcentajes: number[];
   repartoCocinaPct: number;
   actorMeseroId?: string;
@@ -90,17 +93,22 @@ export async function actualizarConfigPropinas(input: {
       propina_porcentajes: porcentajes,
       reparto_cocina_pct: reparto,
     })
-    .eq("id", NEGOCIO_DEMO_ID)
+    .eq("id", input.negocioId)
     .select("propina_porcentajes, reparto_cocina_pct")
     .single();
   if (error || !data) {
     throw new Error("No se pudo guardar la configuración de propinas");
   }
   if (input.actorMeseroId) {
-    await registrarBitacora(input.actorMeseroId, "ajuste_propinas", {
-      propinaPorcentajes: porcentajes,
-      repartoCocinaPct: reparto,
-    });
+    await registrarBitacora(
+      input.actorMeseroId,
+      "ajuste_propinas",
+      {
+        propinaPorcentajes: porcentajes,
+        repartoCocinaPct: reparto,
+      },
+      input.negocioId,
+    );
   }
   return {
     propinaPorcentajes: [...data.propina_porcentajes],

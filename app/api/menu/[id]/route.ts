@@ -13,7 +13,12 @@ export async function PATCH(
     const sesion = await requireSesion(request, { rol: "admin" });
     const { id } = await context.params;
     const json: unknown = await request.json();
-    const item = await actualizarItem(id, json, sesion.meseroId);
+    const item = await actualizarItem(
+      sesion.negocioId,
+      id,
+      json,
+      sesion.meseroId,
+    );
     return NextResponse.json({ item });
   } catch (error) {
     return jsonError(error);

@@ -7,8 +7,6 @@ export type { MeseroPublico };
 
 type MeseroRow = Database["public"]["Tables"]["meseros"]["Row"];
 
-const NEGOCIO_DEMO = "11111111-1111-1111-1111-111111111111";
-
 function aPublico(row: MeseroRow): MeseroPublico {
   return {
     id: row.id,
@@ -20,12 +18,14 @@ function aPublico(row: MeseroRow): MeseroPublico {
   };
 }
 
-export async function listarMeserosPublicos(): Promise<MeseroPublico[]> {
+export async function listarMeserosPublicos(
+  negocioId: string,
+): Promise<MeseroPublico[]> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("meseros")
     .select("*")
-    .eq("negocio_id", NEGOCIO_DEMO)
+    .eq("negocio_id", negocioId)
     .order("nombre", { ascending: true });
   if (error) {
     throw new Error("No se pudieron listar meseros");
@@ -55,6 +55,7 @@ export async function obtenerMeseroPublico(
 
 export async function crearMesero(input: {
   nombre: string;
+  negocioId: string;
   peyBankAccountId?: string;
 }): Promise<MeseroPublico> {
   const nombre = input.nombre.trim();
@@ -65,7 +66,7 @@ export async function crearMesero(input: {
   const { data, error } = await supabase
     .from("meseros")
     .insert({
-      negocio_id: NEGOCIO_DEMO,
+      negocio_id: input.negocioId,
       nombre,
       pey_bank_account_id: input.peyBankAccountId ?? null,
     })
@@ -81,6 +82,7 @@ export async function actualizarCuentaPeyMesero(
   meseroId: string,
   peyBankAccountId: string | null,
   actorMeseroId?: string,
+  negocioId?: string | null,
 ): Promise<MeseroPublico> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
@@ -92,18 +94,24 @@ export async function actualizarCuentaPeyMesero(
   if (error || !data) {
     throw new Error("No se pudo actualizar la cuenta pey del mesero");
   }
-  await registrarBitacora(actorMeseroId ?? meseroId, "cuenta_pey", {
-    meseroId,
-    peyUltimos4: peyUlidUltimos4(peyBankAccountId),
-  });
+  await registrarBitacora(
+    actorMeseroId ?? meseroId,
+    "cuenta_pey",
+    {
+      meseroId,
+      peyUltimos4: peyUlidUltimos4(peyBankAccountId),
+    },
+    negocioId ?? data.negocio_id,
+  );
   return aPublico(data);
 }
 
-async function contarAdminsActivos(): Promise<number> {
+async function contarAdminsActivos(negocioId: string): Promise<number> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("meseros")
     .select("id")
+    .eq("negocio_id", negocioId)
     .eq("rol", "admin")
     .eq("activo", true);
   if (error) {
@@ -142,7 +150,7 @@ export async function actualizarMeseroAdmin(input: {
   }
   if (input.rol !== undefined && input.rol !== actual.rol) {
     if (actual.rol === "admin" && input.rol === "mesero") {
-      if ((await contarAdminsActivos()) <= 1) {
+      if ((await contarAdminsActivos(actual.negocio_id)) <= 1) {
         throw new Error("No puedes quitar el rol al último admin");
       }
     }
@@ -152,7 +160,7 @@ export async function actualizarMeseroAdmin(input: {
   }
   if (input.activo !== undefined && input.activo !== actual.activo) {
     if (actual.rol === "admin" && input.activo === false) {
-      if ((await contarAdminsActivos()) <= 1) {
+      if ((await contarAdminsActivos(actual.negocio_id)) <= 1) {
         throw new Error("No puedes desactivar al último admin");
       }
     }
@@ -180,26 +188,36 @@ export async function actualizarMeseroAdmin(input: {
 
   const actor = input.actorMeseroId ?? input.meseroId;
   const sujeto = { meseroId: input.meseroId };
+  const nid = actual.negocio_id;
   if (cambioPin) {
-    await registrarBitacora(actor, "cambio_pin", sujeto);
+    await registrarBitacora(actor, "cambio_pin", sujeto, nid);
   }
   if (cambioRol !== undefined) {
-    await registrarBitacora(actor, "cambio_rol", {
-      ...sujeto,
-      rol: cambioRol,
-    });
+    await registrarBitacora(
+      actor,
+      "cambio_rol",
+      { ...sujeto, rol: cambioRol },
+      nid,
+    );
   }
   if (cambioActivo !== undefined) {
-    await registrarBitacora(actor, "cambio_activo", {
-      ...sujeto,
-      activo: cambioActivo,
-    });
+    await registrarBitacora(
+      actor,
+      "cambio_activo",
+      { ...sujeto, activo: cambioActivo },
+      nid,
+    );
   }
   if (input.peyBankAccountId !== undefined) {
-    await registrarBitacora(actor, "cuenta_pey", {
-      ...sujeto,
-      peyUltimos4: peyUlidUltimos4(input.peyBankAccountId),
-    });
+    await registrarBitacora(
+      actor,
+      "cuenta_pey",
+      {
+        ...sujeto,
+        peyUltimos4: peyUlidUltimos4(input.peyBankAccountId),
+      },
+      nid,
+    );
   }
 
   return aPublico(data);
@@ -221,7 +239,7 @@ export async function eliminarMeseroAdmin(input: {
     throw new Error("Mesero no encontrado");
   }
   if (actual.rol === "admin" && actual.activo) {
-    if ((await contarAdminsActivos()) <= 1) {
+    if ((await contarAdminsActivos(actual.negocio_id)) <= 1) {
       throw new Error("No puedes eliminar al último admin");
     }
   }
@@ -230,7 +248,8 @@ export async function eliminarMeseroAdmin(input: {
   const { count: cuentasCount, error: errCuentas } = await supabase
     .from("cuentas")
     .select("id", { count: "exact", head: true })
-    .eq("mesero_id", input.meseroId);
+    .eq("mesero_id", input.meseroId)
+    .eq("negocio_id", actual.negocio_id);
   if (errCuentas) {
     throw new Error("No se pudo verificar mesas del mesero");
   }
@@ -258,10 +277,15 @@ export async function eliminarMeseroAdmin(input: {
     .update({ mesero_id: null })
     .eq("mesero_id", input.meseroId);
 
-  await registrarBitacora(input.actorMeseroId, "mesero_eliminar", {
-    meseroId: input.meseroId,
-    nombre: actual.nombre,
-  });
+  await registrarBitacora(
+    input.actorMeseroId,
+    "mesero_eliminar",
+    {
+      meseroId: input.meseroId,
+      nombre: actual.nombre,
+    },
+    actual.negocio_id,
+  );
 
   const { error } = await supabase
     .from("meseros")

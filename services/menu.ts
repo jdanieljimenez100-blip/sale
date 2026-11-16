@@ -7,8 +7,6 @@ import { registrarBitacora } from "@/services/bitacora";
 
 type MenuItemRow = Database["public"]["Tables"]["menu_items"]["Row"];
 
-const NEGOCIO = "11111111-1111-1111-1111-111111111111";
-
 const crearSchema = z.object({
   nombre: z.string().trim().min(1).max(60),
   categoria: z.string().trim().min(1).max(30),
@@ -28,12 +26,15 @@ const actualizarSchema = z.object({
 export type MenuItemCrearInput = z.infer<typeof crearSchema>;
 export type MenuItemActualizarInput = z.infer<typeof actualizarSchema>;
 
-export async function listarMenu(soloActivos: boolean): Promise<MenuItemRow[]> {
+export async function listarMenu(
+  negocioId: string,
+  soloActivos: boolean,
+): Promise<MenuItemRow[]> {
   const supabase = createServiceClient();
   let query = supabase
     .from("menu_items")
     .select("*")
-    .eq("negocio_id", NEGOCIO)
+    .eq("negocio_id", negocioId)
     .order("categoria", { ascending: true })
     .order("orden", { ascending: true })
     .order("nombre", { ascending: true });
@@ -48,6 +49,7 @@ export async function listarMenu(soloActivos: boolean): Promise<MenuItemRow[]> {
 }
 
 export async function crearItem(
+  negocioId: string,
   input: unknown,
   actorMeseroId: string,
 ): Promise<MenuItemRow> {
@@ -60,7 +62,7 @@ export async function crearItem(
   const { data, error } = await supabase
     .from("menu_items")
     .insert({
-      negocio_id: NEGOCIO,
+      negocio_id: negocioId,
       nombre: body.nombre,
       categoria: body.categoria,
       precio_centavos: precio,
@@ -72,15 +74,21 @@ export async function crearItem(
   if (error || !data) {
     throw new Error("No se pudo crear el platillo");
   }
-  await registrarBitacora(actorMeseroId, "menu_crear", {
-    menuItemId: data.id,
-    nombre: data.nombre,
-    precioCentavos: data.precio_centavos,
-  });
+  await registrarBitacora(
+    actorMeseroId,
+    "menu_crear",
+    {
+      menuItemId: data.id,
+      nombre: data.nombre,
+      precioCentavos: data.precio_centavos,
+    },
+    negocioId,
+  );
   return data;
 }
 
 export async function actualizarItem(
+  negocioId: string,
   id: string,
   input: unknown,
   actorMeseroId: string,
@@ -125,7 +133,7 @@ export async function actualizarItem(
     .from("menu_items")
     .update(patch)
     .eq("id", id)
-    .eq("negocio_id", NEGOCIO)
+    .eq("negocio_id", negocioId)
     .select("*")
     .maybeSingle();
   if (error) {
@@ -134,9 +142,29 @@ export async function actualizarItem(
   if (!data) {
     throw new HttpError("Platillo no encontrado", 404);
   }
-  await registrarBitacora(actorMeseroId, "menu_editar", {
-    menuItemId: data.id,
-    cambios: patch,
-  });
+  await registrarBitacora(
+    actorMeseroId,
+    "menu_editar",
+    {
+      menuItemId: data.id,
+      cambios: patch,
+    },
+    negocioId,
+  );
+  return data;
+}
+
+export async function obtenerMenuItem(
+  id: string,
+): Promise<MenuItemRow | null> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("menu_items")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    throw new Error("No se pudo leer el platillo");
+  }
   return data;
 }

@@ -17,12 +17,11 @@ import { obtenerCuenta } from "@/services/cuentas";
 
 type CuentaRow = Database["public"]["Tables"]["cuentas"]["Row"];
 
-const NEGOCIO = "11111111-1111-1111-1111-111111111111";
-
 export async function abrirMesa(input: {
   mesa: string;
   meseroId: string;
-  sesion: { meseroId: string; rol: RolSesion };
+  negocioId: string;
+  sesion: { meseroId: string; rol: RolSesion; negocioId: string };
 }): Promise<CuentaRow> {
   const mesa = validarNumeroMesa(input.mesa);
   const meseroId =
@@ -32,7 +31,7 @@ export async function abrirMesa(input: {
   }
   const supabase = createServiceClient();
   const { data, error } = await supabase.rpc("sale_abrir_cuenta", {
-    p_negocio_id: NEGOCIO,
+    p_negocio_id: input.negocioId,
     p_mesero_id: meseroId,
     p_mesa: mesa,
   });
@@ -42,11 +41,16 @@ export async function abrirMesa(input: {
     }
     throw new Error("No se pudo abrir la mesa");
   }
-  await registrarBitacora(input.sesion.meseroId, "abrir_mesa", {
-    cuentaId: data.id,
-    mesa: data.mesa,
-    meseroId,
-  });
+  await registrarBitacora(
+    input.sesion.meseroId,
+    "abrir_mesa",
+    {
+      cuentaId: data.id,
+      mesa: data.mesa,
+      meseroId,
+    },
+    input.negocioId,
+  );
   return data;
 }
 
@@ -149,9 +153,30 @@ export async function quitarPartida(input: {
   return data;
 }
 
+/** Cuenta dueña de una partida (para assert de negocio en API). */
+export async function negocioIdDePartida(
+  partidaId: string,
+): Promise<string | null> {
+  const supabase = createServiceClient();
+  const { data: partida } = await supabase
+    .from("partidas")
+    .select("cuenta_id")
+    .eq("id", partidaId)
+    .maybeSingle();
+  if (!partida) {
+    return null;
+  }
+  const { data: cuenta } = await supabase
+    .from("cuentas")
+    .select("negocio_id")
+    .eq("id", partida.cuenta_id)
+    .maybeSingle();
+  return cuenta?.negocio_id ?? null;
+}
+
 export async function cerrarMesa(input: {
   cuentaId: string;
-  sesion: { meseroId: string; rol: RolSesion };
+  sesion: { meseroId: string; rol: RolSesion; negocioId: string };
 }): Promise<CuentaRow> {
   const cuenta = await obtenerCuenta(input.cuentaId);
   if (!cuenta) {
@@ -173,9 +198,14 @@ export async function cerrarMesa(input: {
   if (error || !data) {
     throw new Error(error?.message ?? "No se pudo cerrar la mesa");
   }
-  await registrarBitacora(input.sesion.meseroId, "cerrar_mesa", {
-    cuentaId: data.id,
-    mesa: data.mesa,
-  });
+  await registrarBitacora(
+    input.sesion.meseroId,
+    "cerrar_mesa",
+    {
+      cuentaId: data.id,
+      mesa: data.mesa,
+    },
+    input.sesion.negocioId,
+  );
   return data;
 }

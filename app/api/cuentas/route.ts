@@ -5,8 +5,10 @@ import { listarCuentasConResumen } from "@/services/cuentas";
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    await requireSesion(request);
-    const { cuentas, cerradasHoy, resumen } = await listarCuentasConResumen();
+    const sesion = await requireSesion(request);
+    const { cuentas, cerradasHoy, resumen } = await listarCuentasConResumen(
+      sesion.negocioId,
+    );
     return NextResponse.json({ cuentas, cerradasHoy, resumen });
   } catch (error) {
     return jsonError(error);

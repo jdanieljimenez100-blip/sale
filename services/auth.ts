@@ -167,10 +167,19 @@ export async function setupPrimerAdmin(input: {
   const pinHash = hashPin(input.pin);
   const supabase = createServiceClient();
 
+  const { data: demo, error: errDemo } = await supabase
+    .from("negocios")
+    .select("id")
+    .eq("slug", "demo")
+    .maybeSingle();
+  if (errDemo || !demo) {
+    throw new Error("No se encontró el negocio demo");
+  }
+
   const { data, error } = await supabase
     .from("meseros")
     .insert({
-      negocio_id: "11111111-1111-1111-1111-111111111111",
+      negocio_id: demo.id,
       nombre,
       rol: "admin",
       pin_hash: pinHash,

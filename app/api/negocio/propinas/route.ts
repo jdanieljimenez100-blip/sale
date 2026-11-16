@@ -14,8 +14,8 @@ const bodySchema = z.object({
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    await requireSesion(request, { rol: "admin" });
-    const config = await obtenerConfigPropinasNegocio();
+    const sesion = await requireSesion(request, { rol: "admin" });
+    const config = await obtenerConfigPropinasNegocio(sesion.negocioId);
     return NextResponse.json(config);
   } catch (error) {
     return jsonError(error);
@@ -28,6 +28,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
     const json: unknown = await request.json();
     const body = bodySchema.parse(json);
     const config = await actualizarConfigPropinas({
+      negocioId: sesion.negocioId,
       propinaPorcentajes: body.propinaPorcentajes,
       repartoCocinaPct: body.repartoCocinaPct,
       actorMeseroId: sesion.meseroId,

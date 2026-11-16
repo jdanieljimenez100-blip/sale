@@ -12,8 +12,8 @@ const crearSchema = z.object({
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    await requireSesion(request);
-    const meseros = await listarMeserosPublicos();
+    const sesion = await requireSesion(request);
+    const meseros = await listarMeserosPublicos(sesion.negocioId);
     return NextResponse.json({ meseros });
   } catch (error) {
     return jsonError(error);
@@ -22,11 +22,12 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    await requireSesion(request, { rol: "admin" });
+    const sesion = await requireSesion(request, { rol: "admin" });
     const json: unknown = await request.json();
     const input = crearSchema.parse(json);
     const mesero = await crearMesero({
       nombre: input.nombre,
+      negocioId: sesion.negocioId,
       peyBankAccountId: input.peyBankAccountId,
     });
     return NextResponse.json({ mesero });

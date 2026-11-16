@@ -2,9 +2,9 @@
 -- `mesa` lleva dígitos porque de ahí sale numRef para pey (^[0-9]{1,7}$).
 -- Ana (2222…222) atiende mesas 1 y 2. Luis (2222…223) atiende mesa 3, sin cuenta pey.
 
-INSERT INTO public.negocios (id, nombre, pey_bank_account_id)
-VALUES ('11111111-1111-1111-1111-111111111111', 'Taquería Demo Sale', NULL)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.negocios (id, nombre, slug, pey_bank_account_id)
+VALUES ('11111111-1111-1111-1111-111111111111', 'Taquería Demo Sale', 'demo', NULL)
+ON CONFLICT (id) DO UPDATE SET slug = COALESCE(public.negocios.slug, EXCLUDED.slug);
 
 INSERT INTO public.meseros (id, negocio_id, nombre, pey_bank_account_id)
 VALUES

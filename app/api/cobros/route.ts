@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
+import { assertMismoNegocio } from "@/lib/auth/assert-negocio";
 import { requireSesion } from "@/lib/auth/require";
 import { uuidSchema } from "@/lib/uuid";
 import { crearCobroApp } from "@/services/cobros";
+import { obtenerCuenta } from "@/services/cuentas";
 
 const bodySchema = z.object({
   cuentaId: uuidSchema.optional(),
@@ -15,7 +17,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    await requireSesion(request);
+    const sesion = await requireSesion(request);
     const json: unknown = await request.json();
     if (
       typeof json === "object" &&
@@ -29,6 +31,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
     const input = bodySchema.parse(json);
+    if (input.cuentaId) {
+      const cuenta = await obtenerCuenta(input.cuentaId);
+      if (!cuenta) {
+        return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+      }
+      assertMismoNegocio(cuenta.negocio_id, sesion.negocioId);
+    }
     const cobro = await crearCobroApp(input);
     return NextResponse.json({ cobro });
   } catch (error) {

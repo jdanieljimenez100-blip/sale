@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
+import { assertMismoNegocio } from "@/lib/auth/assert-negocio";
 import { requireSesion } from "@/lib/auth/require";
+import { obtenerCuenta } from "@/services/cuentas";
 import {
   dividirCuentaIgual,
   dividirCuentaPorMontos,
@@ -27,6 +29,11 @@ export async function POST(
   try {
     const sesion = await requireSesion(request);
     const { id } = await context.params;
+    const existente = await obtenerCuenta(id);
+    if (!existente) {
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    }
+    assertMismoNegocio(existente.negocio_id, sesion.negocioId);
     const json: unknown = await request.json();
     const input = bodySchema.parse(json);
     const cobros =

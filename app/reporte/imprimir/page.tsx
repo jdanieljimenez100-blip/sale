@@ -11,7 +11,7 @@ import {
   formatearPct1,
 } from "@/lib/reporte";
 import { formatearFechaPagoCdmx } from "@/lib/ticket";
-import { obtenerNegocioDemo } from "@/services/negocios";
+import { obtenerNegocio } from "@/services/negocios";
 import {
   listarPagosRango,
   obtenerReporteDesempeno,
@@ -59,7 +59,7 @@ export default async function ReporteImprimirPage({
   const [reporte, pagos, negocio] = await Promise.all([
     obtenerReporteDesempeno(dias, sesion),
     listarPagosRango(dias, sesion),
-    obtenerNegocioDemo(),
+    obtenerNegocio(sesion.negocioId),
   ]);
 
   const esAdmin = sesion.rol === "admin";

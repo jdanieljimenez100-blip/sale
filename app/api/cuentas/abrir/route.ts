@@ -18,6 +18,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const cuenta = await abrirMesa({
       mesa: body.mesa,
       meseroId: body.meseroId ?? sesion.meseroId,
+      negocioId: sesion.negocioId,
       sesion,
     });
     return NextResponse.json({ cuenta });

@@ -8,12 +8,12 @@ export async function GET(request: Request): Promise<NextResponse> {
     const url = new URL(request.url);
     const todos = url.searchParams.get("todos") === "1";
     if (todos) {
-      await requireSesion(request, { rol: "admin" });
-      const items = await listarMenu(false);
+      const sesion = await requireSesion(request, { rol: "admin" });
+      const items = await listarMenu(sesion.negocioId, false);
       return NextResponse.json({ items });
     }
-    await requireSesion(request);
-    const items = await listarMenu(true);
+    const sesion = await requireSesion(request);
+    const items = await listarMenu(sesion.negocioId, true);
     return NextResponse.json({ items });
   } catch (error) {
     return jsonError(error);
@@ -24,7 +24,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     const sesion = await requireSesion(request, { rol: "admin" });
     const json: unknown = await request.json();
-    const item = await crearItem(json, sesion.meseroId);
+    const item = await crearItem(sesion.negocioId, json, sesion.meseroId);
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {
     return jsonError(error);

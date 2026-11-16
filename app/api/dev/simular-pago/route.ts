@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
+import { assertMismoNegocio } from "@/lib/auth/assert-negocio";
 import { DEMO_TOKEN_HEADER } from "@/lib/demo-auth";
 import { requireSesion } from "@/lib/auth/require";
 import { getServerEnv } from "@/lib/env";
@@ -16,7 +17,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    await requireSesion(request);
+    const sesion = await requireSesion(request);
     const env = getServerEnv();
     if (env.PEY_MODE !== "mock") {
       return NextResponse.json(
@@ -29,8 +30,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     const { cobroId } = bodySchema.parse(json);
     const cobro = await obtenerCobro(cobroId);
     if (!cobro) {
-      return NextResponse.json({ error: "Cobro no encontrado" }, { status: 404 });
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     }
+    assertMismoNegocio(cobro.negocio_id, sesion.negocioId);
 
     const payload = {
       amount: cobro.monto_centavos / 100,

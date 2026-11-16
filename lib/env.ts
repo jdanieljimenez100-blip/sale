@@ -8,6 +8,8 @@ const serverEnvSchema = z.object({
   PEY_API_KEY: z.string().optional(),
   PEY_WEBHOOK_SECRET: z.string().optional(),
   PEY_BANK_ACCOUNT_RESTAURANTE: z.string().optional(),
+  /** Base64 de exactamente 32 bytes; se valida al cifrar/descifrar. */
+  PEY_SECRETS_KEY: z.string().optional(),
   DEMO_ACCESS_TOKEN: z.string().min(1),
   SESSION_SECRET: z.string().min(32),
 });

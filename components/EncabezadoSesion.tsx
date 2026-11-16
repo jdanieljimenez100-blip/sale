@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { useSesion } from "@/components/SesionContext";
@@ -29,19 +30,28 @@ export function EncabezadoSesion(): ReactElement {
           </span>
         ) : null}
       </div>
-      {!esAdmin ? (
-        <button
-          type="button"
-          onClick={() => {
-            void salir();
-          }}
-          className="pressable min-h-11 shrink-0 rounded-boton px-3 text-[15px] font-semibold text-tinta-suave underline underline-offset-2 hover:text-tinta focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
+      <div className="flex shrink-0 items-center gap-1">
+        <Link
+          href="/ayuda"
+          aria-label="Ayuda"
+          className="pressable inline-flex min-h-11 min-w-11 items-center justify-center rounded-boton text-[17px] font-semibold text-tinta-suave hover:bg-superficie hover:text-tinta focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
         >
-          Salir
-        </button>
-      ) : (
-        <span className="sr-only">Sesión admin</span>
-      )}
+          ?
+        </Link>
+        {!esAdmin ? (
+          <button
+            type="button"
+            onClick={() => {
+              void salir();
+            }}
+            className="pressable min-h-11 shrink-0 rounded-boton px-3 text-[15px] font-semibold text-tinta-suave underline underline-offset-2 hover:text-tinta focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario"
+          >
+            Salir
+          </button>
+        ) : (
+          <span className="sr-only">Sesión admin</span>
+        )}
+      </div>
     </header>
   );
 }

@@ -26,6 +26,12 @@ export default function AjustesPage(): ReactElement {
         Equipo (meseros)
       </Link>
       <Link
+        href="/ayuda"
+        className="flex min-h-12 items-center text-[15px] font-semibold text-primario underline underline-offset-2"
+      >
+        Ayuda
+      </Link>
+      <Link
         href="/cuentas"
         className="flex min-h-12 items-center text-[15px] text-tinta-suave underline underline-offset-2"
       >

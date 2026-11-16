@@ -168,6 +168,33 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
     ],
   },
   {
+    slug: "reportes",
+    titulo: "Reportes a Excel y PDF",
+    resumen:
+      "Cómo descargar el desempeño en Excel y guardar o imprimir el PDF.",
+    secciones: [
+      {
+        titulo: "Descargar Excel",
+        parrafos: [
+          "En Reporte elige el periodo (hoy, 7 o 30 días) y toca “Descargar Excel” para el resumen por mesero, o “Excel de pagos” para el detalle de cada cobro pagado.",
+          "El archivo abre en Excel u hojas de cálculo. Los montos van en pesos con dos decimales, listos para sumar.",
+        ],
+      },
+      {
+        titulo: "Guardar PDF",
+        parrafos: [
+          "Toca “Guardar PDF” para ver la versión lista para imprimir. Desde ahí usa “Guardar PDF / Imprimir” y elige guardar como PDF o la impresora.",
+        ],
+      },
+      {
+        titulo: "Qué ve cada rol",
+        parrafos: [
+          "El admin ve a todo el equipo y el total del periodo. El mesero solo ve sus propios números y pagos: no aparecen los de otras personas.",
+        ],
+      },
+    ],
+  },
+  {
     slug: "problemas-frecuentes",
     titulo: "Problemas frecuentes",
     resumen:

@@ -1,0 +1,217 @@
+export type SeccionAyuda = {
+  titulo: string;
+  parrafos: string[];
+  pasos?: string[];
+};
+
+export type TemaAyuda = {
+  slug: string;
+  titulo: string;
+  resumen: string;
+  secciones: SeccionAyuda[];
+};
+
+/**
+ * Temas de ayuda públicos. Lenguaje simple (MX).
+ * Sin llaves, ULID, CLABE ni PIN reales.
+ */
+export const TEMAS_AYUDA: TemaAyuda[] = [
+  {
+    slug: "como-funciona",
+    titulo: "Cómo funciona Sale",
+    resumen:
+      "De abrir la mesa al ticket del cliente, pasando por el cobro CoDi.",
+    secciones: [
+      {
+        titulo: "El recorrido completo",
+        parrafos: [
+          "Sale es el punto de venta del restaurante. El mesero arma la cuenta, el cliente paga con CoDi desde su banco y solo entonces la mesa queda pagada.",
+          "El estado “pagado” no lo marca nadie a mano en la pantalla: lo confirma el banco con un aviso firmado a nuestros servidores.",
+        ],
+        pasos: [
+          "Abres una mesa y queda a tu nombre.",
+          "Agregas platillos del menú (puedes poner una nota corta, sin datos personales).",
+          "Cobras: Sale muestra un QR CoDi con el monto.",
+          "El cliente escanea con la app de su banco y confirma el pago.",
+          "El banco avisa a Sale con un webhook firmado; la mesa pasa a pagada.",
+          "El cliente puede escanear su ticket (enlace o QR) para ver el detalle y guardarlo.",
+        ],
+      },
+      {
+        titulo: "Qué verás en el salón",
+        parrafos: [
+          "En Mesas ves qué cuentas están pendientes, parciales o pagadas. Cuando una mesa ya está pagada, puedes cerrarla para liberar el número.",
+          "Si el QR se vence antes de que paguen, genera otro desde la pantalla del cobro. No inventes un “pagado” a mano.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "conectar-pey",
+    titulo: "Conectar pey (CoDi)",
+    resumen:
+      "Pasos en el portal de pey para que el restaurante pueda cobrar y recibir propinas.",
+    secciones: [
+      {
+        titulo: "Antes de empezar",
+        parrafos: [
+          "pey es quien genera los QR CoDi y avisa cuando un pago quedó hecho. Sale solo habla con pey desde el servidor: la llave y el secreto nunca van al navegador ni se comparten por chat.",
+        ],
+      },
+      {
+        titulo: "Pasos en portal.mipey.mx",
+        parrafos: [
+          "Hazlo una vez por restaurante. Si cambias de llave, también cambia el secreto del webhook.",
+        ],
+        pasos: [
+          "Crea tu cuenta en portal.mipey.mx.",
+          "En “Desarrollador”, crea UNA API key por restaurante.",
+          "En esa misma key configura el webhook con la URL de Sale (ruta /api/webhooks/pey) y guarda el secreto. Cada API key tiene un solo webhook y su propio secreto.",
+          "Registra las cuentas bancarias (CLABE) del restaurante y de los meseros bajo esa misma API key. En Sale solo se guarda la referencia que pey te da, no la CLABE.",
+          "La activación CoDi puede tardar hasta 5 días hábiles (el estado pasa de PENDING a ACTIVE).",
+          "Prueba con un cobro de un centavo ($0.01) para confirmar que el webhook llega y la mesa se marca pagada.",
+        ],
+      },
+      {
+        titulo: "Seguridad de la API key",
+        parrafos: [
+          "La API key y el secreto del webhook solo viven en variables de entorno del servidor (Vercel). Nunca las pongas en el código del front ni en una página pública.",
+          "Si sospechas que se filtraron, rota la key y el secreto en pey, actualiza el entorno y vuelve a desplegar.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "propinas",
+    titulo: "Propinas",
+    resumen:
+      "Segundo QR después del pago, porcentaje sobre esa parte y destino al mesero o al restaurante.",
+    secciones: [
+      {
+        titulo: "Cómo se ofrece la propina",
+        parrafos: [
+          "La propina es un segundo QR, después de que el consumo (o la parte) ya quedó pagada. No es un campo libre al abrir la mesa.",
+          "El porcentaje se calcula sobre ESE pago concreto, no sobre el total de toda la mesa si hubo varias partes.",
+        ],
+      },
+      {
+        titulo: "Cuenta dividida",
+        parrafos: [
+          "Si dividiste la cuenta, cada persona ve su propio flujo: paga su parte y luego decide si deja propina sobre su monto.",
+          "Solo puede haber una propina activa por cada pago de consumo. Si el QR de propina vence, se puede generar otro según las reglas de la app.",
+        ],
+      },
+      {
+        titulo: "¿A quién llega el dinero?",
+        parrafos: [
+          "Si el mesero tiene cuenta pey activa, la propina va directo a esa cuenta. Si no, va a la cuenta del restaurante.",
+          "El “reparto a cocina” que configura el admin es solo informativo: Sale no mueve ese dinero; el restaurante lo reparte por su cuenta.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "dividir-cuenta",
+    titulo: "Dividir la cuenta",
+    resumen:
+      "Partes iguales o por montos, siempre cubriendo exactamente lo que falta por cobrar.",
+    secciones: [
+      {
+        titulo: "Partes iguales",
+        parrafos: [
+          "Eliges cuántas personas y Sale reparte el restante en partes lo más parecidas posible.",
+          "Si el total no se divide exacto en centavos, el centavo que sobra va en la primera parte.",
+        ],
+      },
+      {
+        titulo: "Por montos",
+        parrafos: [
+          "Escribes montos en centavos (o pesos en la pantalla) que sumen exactamente lo que aún falta por cobrar de consumo.",
+          "Cada monto genera su propio QR. Cuando todos esos cobros queden pagados, la mesa puede pasar a pagada.",
+        ],
+      },
+      {
+        titulo: "Consejo en servicio",
+        parrafos: [
+          "Si alguien ya pagó una parte y quieres regenerar otro QR, usa las pantallas de cobro: no marques nada como pagado a mano.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "seguridad",
+    titulo: "Seguridad",
+    resumen:
+      "Pagado solo por el banco, PIN por persona y privacidad.",
+    secciones: [
+      {
+        titulo: "Pagado de verdad",
+        parrafos: [
+          "El estado “pagado” solo cambia cuando llega un webhook firmado de pey/el banco. Un toque en la pantalla no alcanza.",
+          "Si el mismo aviso llega dos veces, Sale lo cuenta una sola vez (idempotencia por id del evento).",
+        ],
+      },
+      {
+        titulo: "PIN y sesiones",
+        parrafos: [
+          "Cada mesero y cada admin tiene su propio PIN. Tras varios intentos fallidos, hay un bloqueo de unos minutos.",
+          "Si el admin cambia el PIN, el rol o desactiva a alguien, las sesiones viejas dejan de servir.",
+        ],
+      },
+      {
+        titulo: "Privacidad",
+        parrafos: [
+          "Sale no guarda la CLABE ni el nombre de la cuenta del cliente. El ticket público no lleva datos del comensal.",
+          "Puedes leer el aviso en /privacidad.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "problemas-frecuentes",
+    titulo: "Problemas frecuentes",
+    resumen:
+      "PIN bloqueado, QR vencido, pago que no se ve y mesa que no cierra.",
+    secciones: [
+      {
+        titulo: "PIN bloqueado",
+        parrafos: [
+          "Si fallaste varias veces, espera el bloqueo (alrededor de 5 minutos) y vuelve a intentar. Si urge, un admin puede reiniciar el PIN en Equipo.",
+        ],
+      },
+      {
+        titulo: "El QR se venció",
+        parrafos: [
+          "Usa el botón para generar otro QR en la pantalla del cobro. No cobres de nuevo “por si acaso” si el cliente dice que ya pagó: espera unos segundos a que llegue el aviso del banco.",
+        ],
+      },
+      {
+        titulo: "Pagué y no se refleja",
+        parrafos: [
+          "Confirma en la app del banco. Espera unos segundos: el webhook puede tardar un poco. No generes otro cobro del mismo monto hasta estar seguro de que el primero falló.",
+          "Si sigue sin aparecer, revisa con el admin que el webhook de pey apunte a la URL correcta de Sale y que la cuenta CoDi esté ACTIVE.",
+        ],
+      },
+      {
+        titulo: "La mesa no se cierra",
+        parrafos: [
+          "Solo se cierra una mesa en estado pagada. Si falta cubrir el total de consumo, cobra o regenera el QR de lo que falta.",
+        ],
+      },
+      {
+        titulo: "Cuenta pey en PENDING",
+        parrafos: [
+          "Mientras la cuenta CoDi no esté ACTIVE (puede tardar días hábiles), los cobros o propinas a esa cuenta pueden fallar o no aplicarse. Usa una cuenta ya activa o espera la activación.",
+        ],
+      },
+    ],
+  },
+];
+
+export function obtenerTema(slug: string): TemaAyuda | undefined {
+  return TEMAS_AYUDA.find((t) => t.slug === slug);
+}
+
+export function indiceTema(slug: string): number {
+  return TEMAS_AYUDA.findIndex((t) => t.slug === slug);
+}

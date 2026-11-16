@@ -14,6 +14,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { registrarBitacora } from "@/services/bitacora";
 import { obtenerCuenta } from "@/services/cuentas";
+import { obtenerMeseroDelNegocio } from "@/services/meseros";
 
 type CuentaRow = Database["public"]["Tables"]["cuentas"]["Row"];
 
@@ -28,6 +29,9 @@ export async function abrirMesa(input: {
     input.sesion.rol === "admin" ? input.meseroId : input.sesion.meseroId;
   if (input.sesion.rol !== "admin" && meseroId !== input.sesion.meseroId) {
     throw new HttpError("Solo puedes abrir mesas a tu nombre", 403);
+  }
+  if (input.sesion.rol === "admin" && meseroId !== input.sesion.meseroId) {
+    await obtenerMeseroDelNegocio(meseroId, input.negocioId);
   }
   const supabase = createServiceClient();
   const { data, error } = await supabase.rpc("sale_abrir_cuenta", {

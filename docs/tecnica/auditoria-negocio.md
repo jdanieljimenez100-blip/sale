@@ -36,6 +36,7 @@ Convención: **sesión** = `sesion.negocioId` de `requireSesion`.
 | `services/auth.ts` | `.from("negocios")` por id | Id pedido (sesión / accesos) |
 | `services/bitacora.ts` | `.from("bitacora")` insert | Columna `negocio_id` opcional cuando el caller la pasa |
 | `services/cobros.ts` | `.rpc("sale_insert_cobro")` | RPC calcula `negocio_id` de cuenta o mesero |
+| `app/api/cobros/route.ts` | POST cobro rápido: resolve mesero | `resolverMeseroParaCobro` + si admin manda `meseroId`, `obtenerMeseroDelNegocio`; cuenta: assert + `puedeModificarMesa` |
 | `services/cobros.ts` | `.from("cobros")` update expirar al regenerar | Por `id` del cobro ya cargado (ruta API hace assert) |
 | `services/cobros.ts` | `.from("negocios")` nombreNegocioDeCobro | Por `cobro.negocio_id` |
 | `services/cobros.ts` | `.from("cobros")` obtenerCobro / por pey_qr_id | Por id o `pey_qr_id`; API hace assert; webhook usa pey id |
@@ -51,6 +52,7 @@ Convención: **sesión** = `sesion.negocioId` de `requireSesion`.
 | `services/cuentas.ts` | `.rpc("sale_recalc_cuenta")` | Por cuenta_id (webhook o flujo interno) |
 | `services/menu.ts` | `.from("menu_items")` list/create/update/get | list/create/update: `.eq("negocio_id", …)`; get por id + update filtra negocio |
 | `services/mesas.ts` | `.rpc("sale_abrir_cuenta")` | `p_negocio_id` = sesión |
+| `services/mesas.ts` | abrirMesa: mesero elegido por admin | `obtenerMeseroDelNegocio(meseroId, negocioId)` si admin elige otro mesero |
 | `services/mesas.ts` | `.rpc("sale_agregar_partida")` | Cuenta cargada; API assert antes |
 | `services/mesas.ts` | `.from("partidas")` / `.from("cobros")` en quitar | Partida→cuenta; API assert vía `negocioIdDePartida` |
 | `services/mesas.ts` | `.rpc("sale_quitar_partida")` | Tras ownership + assert |
@@ -86,6 +88,6 @@ Convención: **sesión** = `sesion.negocioId` de `requireSesion`.
 
 ## Conteos
 
-- Filas en la tabla de auditoría: **58**
+- Filas en la tabla de auditoría: **60**
 - Consultas públicas intencionales: ticket por token; login-lista por slug;
   webhook pey por ids firmados.

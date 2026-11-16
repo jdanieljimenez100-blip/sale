@@ -1,3 +1,4 @@
+import { HttpError } from "@/lib/api-error";
 import type { MeseroPublico } from "@/lib/meseros-types";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
@@ -44,6 +45,21 @@ export async function obtenerMesero(meseroId: string): Promise<MeseroRow | null>
     throw new Error("No se pudo leer mesero");
   }
   return data;
+}
+
+/**
+ * Mesero activo del negocio indicado. 404 genérico si no existe,
+ * es de otro restaurante o está inactivo.
+ */
+export async function obtenerMeseroDelNegocio(
+  meseroId: string,
+  negocioId: string,
+): Promise<MeseroRow> {
+  const mesero = await obtenerMesero(meseroId);
+  if (!mesero || mesero.negocio_id !== negocioId || !mesero.activo) {
+    throw new HttpError("No encontrado", 404);
+  }
+  return mesero;
 }
 
 export async function obtenerMeseroPublico(

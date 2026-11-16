@@ -3,9 +3,12 @@ import { z } from "zod";
 import { jsonError } from "@/lib/api-error";
 import { assertMismoNegocio } from "@/lib/auth/assert-negocio";
 import { requireSesion } from "@/lib/auth/require";
+import { resolverMeseroParaCobro } from "@/lib/auth/resolver-mesero-cobro";
+import { puedeModificarMesa } from "@/lib/mesa-reglas";
 import { uuidSchema } from "@/lib/uuid";
 import { crearCobroApp } from "@/services/cobros";
 import { obtenerCuenta } from "@/services/cuentas";
+import { obtenerMeseroDelNegocio } from "@/services/meseros";
 
 const bodySchema = z.object({
   cuentaId: uuidSchema.optional(),
@@ -37,8 +40,26 @@ export async function POST(request: Request): Promise<NextResponse> {
         return NextResponse.json({ error: "No encontrado" }, { status: 404 });
       }
       assertMismoNegocio(cuenta.negocio_id, sesion.negocioId);
+      puedeModificarMesa({
+        rol: sesion.rol,
+        sesionMeseroId: sesion.meseroId,
+        cuentaMeseroId: cuenta.mesero_id,
+      });
     }
-    const cobro = await crearCobroApp(input);
+
+    const meseroId = resolverMeseroParaCobro({
+      rol: sesion.rol,
+      sesionMeseroId: sesion.meseroId,
+      meseroIdPedido: input.meseroId,
+    });
+    if (sesion.rol === "admin" && input.meseroId !== undefined) {
+      await obtenerMeseroDelNegocio(meseroId, sesion.negocioId);
+    }
+
+    const cobro = await crearCobroApp({
+      ...input,
+      meseroId,
+    });
     return NextResponse.json({ cobro });
   } catch (error) {
     return jsonError(error);

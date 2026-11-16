@@ -9,8 +9,9 @@ import {
   type ReporteDesempeno,
   type ResenaParaReporte,
 } from "@/lib/reporte";
-import { formatearFechaPagoCdmx } from "@/lib/ticket";
 import { createServiceClient } from "@/lib/supabase/server";
+import { traerTodo } from "@/lib/supabase/traer-todo";
+import { formatearFechaPagoCdmx } from "@/lib/ticket";
 import { peyUlidUltimos4 } from "@/services/bitacora";
 
 export type {
@@ -37,6 +38,26 @@ export type PagoReporteFila = {
   peyUltimos4: string | null;
 };
 
+type CobroReporteRow = {
+  id: string;
+  mesero_id: string | null;
+  cuenta_id: string | null;
+  tipo: "consumo" | "propina";
+  monto_centavos: number;
+  cobro_origen_id: string | null;
+  created_at: string;
+  pagado_at: string | null;
+};
+
+type CobroPagoRow = {
+  cuenta_id: string | null;
+  mesero_id: string | null;
+  tipo: "consumo" | "propina";
+  monto_centavos: number;
+  pey_transaction_id: string | null;
+  pagado_at: string | null;
+};
+
 type ResenaSelect = {
   id: string;
   cobro_id: string;
@@ -53,40 +74,39 @@ export async function obtenerReporteDesempeno(
   const desde = inicioRangoMexicoCity(rangoDias);
   const supabase = createServiceClient();
   const negocioId = sesion.negocioId;
+  const desdeIso = desde.toISOString();
 
-  const [
-    { data: cobros, error: cobrosError },
-    { data: meseros, error: meserosError },
-    { data: negocio },
-  ] = await Promise.all([
-    supabase
-      .from("cobros")
-      .select(
-        "id, mesero_id, cuenta_id, tipo, monto_centavos, cobro_origen_id, created_at, pagado_at",
-      )
-      .eq("negocio_id", negocioId)
-      .eq("estado", "pagado")
-      .gte("pagado_at", desde.toISOString()),
-    supabase
-      .from("meseros")
-      .select("id, nombre")
-      .eq("negocio_id", negocioId),
+  const [cobros, meseros, negocio] = await Promise.all([
+    traerTodo<CobroReporteRow>((from, to) =>
+      supabase
+        .from("cobros")
+        .select(
+          "id, mesero_id, cuenta_id, tipo, monto_centavos, cobro_origen_id, created_at, pagado_at",
+        )
+        .eq("negocio_id", negocioId)
+        .eq("estado", "pagado")
+        .gte("pagado_at", desdeIso)
+        .range(from, to),
+    ),
+    traerTodo<{ id: string; nombre: string }>((from, to) =>
+      supabase
+        .from("meseros")
+        .select("id, nombre")
+        .eq("negocio_id", negocioId)
+        .range(from, to),
+    ),
     supabase
       .from("negocios")
       .select("reparto_cocina_pct")
       .eq("id", negocioId)
-      .maybeSingle(),
+      .maybeSingle()
+      .then((r) => r.data),
   ]);
 
-  if (cobrosError || meserosError) {
-    throw new Error("No se pudo armar el reporte");
-  }
-
-  const lista = cobros ?? [];
-  const cobroIds = lista.filter((c) => c.tipo === "consumo").map((c) => c.id);
+  const cobroIds = cobros.filter((c) => c.tipo === "consumo").map((c) => c.id);
   const cuentaIds = [
     ...new Set(
-      lista
+      cobros
         .map((c) => c.cuenta_id)
         .filter((id): id is string => typeof id === "string"),
     ),
@@ -94,26 +114,30 @@ export async function obtenerReporteDesempeno(
 
   let resenas: ResenaSelect[] = [];
   if (cobroIds.length > 0) {
-    const { data } = await supabase
-      .from("resenas")
-      .select("id, cobro_id, mesero_id, estrellas, comentario, created_at")
-      .in("cobro_id", cobroIds);
-    resenas = data ?? [];
+    resenas = await traerTodo<ResenaSelect>((from, to) =>
+      supabase
+        .from("resenas")
+        .select("id, cobro_id, mesero_id, estrellas, comentario, created_at")
+        .in("cobro_id", cobroIds)
+        .range(from, to),
+    );
   }
 
   let cuentas: Array<{ id: string; mesa: string }> = [];
   if (cuentaIds.length > 0) {
-    const { data } = await supabase
-      .from("cuentas")
-      .select("id, mesa")
-      .eq("negocio_id", negocioId)
-      .in("id", cuentaIds);
-    cuentas = data ?? [];
+    cuentas = await traerTodo<{ id: string; mesa: string }>((from, to) =>
+      supabase
+        .from("cuentas")
+        .select("id, mesa")
+        .eq("negocio_id", negocioId)
+        .in("id", cuentaIds)
+        .range(from, to),
+    );
   }
 
   const mesaPorCuenta = new Map(cuentas.map((c) => [c.id, c.mesa] as const));
   const mesaPorCobro = new Map(
-    lista
+    cobros
       .filter((c) => c.cuenta_id)
       .map((c) => [c.id, mesaPorCuenta.get(c.cuenta_id!) ?? null] as const),
   );
@@ -125,10 +149,10 @@ export async function obtenerReporteDesempeno(
 
   const completo = calcularReporteDesempeno({
     rangoDias,
-    desdeIso: desde.toISOString(),
-    cobros: lista,
+    desdeIso,
+    cobros,
     resenas: resenasConMesa,
-    meseros: meseros ?? [],
+    meseros,
     repartoCocinaPct: negocio?.reparto_cocina_pct ?? 0,
   });
   return filtrarReportePorSesion(completo, sesion);
@@ -142,38 +166,36 @@ export async function listarPagosRango(
   const desde = inicioRangoMexicoCity(rangoDias);
   const supabase = createServiceClient();
   const negocioId = sesion.negocioId;
+  const desdeIso = desde.toISOString();
 
-  let query = supabase
-    .from("cobros")
-    .select(
-      "cuenta_id, mesero_id, tipo, monto_centavos, pey_transaction_id, pagado_at",
-    )
-    .eq("negocio_id", negocioId)
-    .eq("estado", "pagado")
-    .gte("pagado_at", desde.toISOString())
-    .order("pagado_at", { ascending: true });
-
-  if (sesion.rol === "mesero") {
-    query = query.eq("mesero_id", sesion.meseroId);
-  }
-
-  const [{ data: cobros, error: cobrosError }, { data: meseros, error: meserosError }] =
-    await Promise.all([
-      query,
+  const [cobros, meseros] = await Promise.all([
+    traerTodo<CobroPagoRow>((from, to) => {
+      let q = supabase
+        .from("cobros")
+        .select(
+          "cuenta_id, mesero_id, tipo, monto_centavos, pey_transaction_id, pagado_at",
+        )
+        .eq("negocio_id", negocioId)
+        .eq("estado", "pagado")
+        .gte("pagado_at", desdeIso)
+        .order("pagado_at", { ascending: true });
+      if (sesion.rol === "mesero") {
+        q = q.eq("mesero_id", sesion.meseroId);
+      }
+      return q.range(from, to);
+    }),
+    traerTodo<{ id: string; nombre: string }>((from, to) =>
       supabase
         .from("meseros")
         .select("id, nombre")
-        .eq("negocio_id", negocioId),
-    ]);
+        .eq("negocio_id", negocioId)
+        .range(from, to),
+    ),
+  ]);
 
-  if (cobrosError || meserosError) {
-    throw new Error("No se pudo listar los pagos del reporte");
-  }
-
-  const lista = cobros ?? [];
   const cuentaIds = [
     ...new Set(
-      lista
+      cobros
         .map((c) => c.cuenta_id)
         .filter((id): id is string => typeof id === "string"),
     ),
@@ -181,20 +203,22 @@ export async function listarPagosRango(
 
   let cuentas: Array<{ id: string; mesa: string }> = [];
   if (cuentaIds.length > 0) {
-    const { data } = await supabase
-      .from("cuentas")
-      .select("id, mesa")
-      .eq("negocio_id", negocioId)
-      .in("id", cuentaIds);
-    cuentas = data ?? [];
+    cuentas = await traerTodo<{ id: string; mesa: string }>((from, to) =>
+      supabase
+        .from("cuentas")
+        .select("id, mesa")
+        .eq("negocio_id", negocioId)
+        .in("id", cuentaIds)
+        .range(from, to),
+    );
   }
 
   const mesaPorCuenta = new Map(cuentas.map((c) => [c.id, c.mesa] as const));
   const nombrePorMesero = new Map(
-    (meseros ?? []).map((m) => [m.id, m.nombre] as const),
+    meseros.map((m) => [m.id, m.nombre] as const),
   );
 
-  return lista.map((c) => {
+  return cobros.map((c) => {
     const mesaLabel =
       c.cuenta_id == null
         ? "Cobro rápido"

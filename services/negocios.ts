@@ -50,6 +50,70 @@ export async function obtenerPerfilNegocio(
   };
 }
 
+export async function crearNegocio(input: {
+  nombre: string;
+  slug: string;
+  actorMeseroId: string;
+}): Promise<NegocioPerfil> {
+  const nombre = input.nombre.trim();
+  const slug = input.slug.trim().toLowerCase();
+  if (nombre.length < 2 || nombre.length > 80) {
+    throw new HttpError("El nombre debe tener entre 2 y 80 caracteres", 400);
+  }
+  if (!slugValido(slug)) {
+    throw new HttpError(
+      "El código debe tener 3 a 40 caracteres: minúsculas, números o guion",
+      400,
+    );
+  }
+
+  const supabase = createServiceClient();
+  const { data: existente, error: errExistente } = await supabase
+    .from("negocios")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (errExistente) {
+    throw new Error("No se pudo validar el código");
+  }
+  if (existente) {
+    throw new HttpError("Ese código de restaurante ya existe", 409);
+  }
+
+  const { data: creado, error: errCrear } = await supabase
+    .from("negocios")
+    .insert({
+      nombre,
+      slug,
+      usa_pey_entorno: false,
+      propina_porcentajes: [...PROPINA_PORCENTAJES_DEFAULT],
+      reparto_cocina_pct: 0,
+    })
+    .select("id, nombre, slug")
+    .single();
+  if (errCrear || !creado) {
+    throw new Error("No se pudo crear el restaurante");
+  }
+
+  const { error: errAcceso } = await supabase.from("negocio_accesos").insert({
+    mesero_id: input.actorMeseroId,
+    negocio_id: creado.id,
+    rol: "admin",
+  });
+  if (errAcceso) {
+    throw new Error("No se pudo dar acceso al nuevo restaurante");
+  }
+
+  await registrarBitacora(
+    input.actorMeseroId,
+    "negocio_crear",
+    { nombre: creado.nombre, slug: creado.slug },
+    creado.id,
+  );
+
+  return creado;
+}
+
 export async function actualizarPerfilNegocio(input: {
   negocioId: string;
   nombre: string;

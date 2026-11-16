@@ -18,6 +18,12 @@ export default function AjustesPage(): ReactElement {
         Este restaurante
       </Link>
       <Link
+        href="/ajustes/restaurantes"
+        className="flex min-h-12 items-center text-[15px] font-semibold text-primario underline underline-offset-2"
+      >
+        Restaurantes
+      </Link>
+      <Link
         href="/ajustes/menu"
         className="flex min-h-12 items-center text-[15px] font-semibold text-primario underline underline-offset-2"
       >

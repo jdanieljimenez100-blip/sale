@@ -12,6 +12,7 @@
 | `sesion_version` | Mesero | Revocar sesión | `meseros.sesion_version` + claim `v` en cookie | Servidor | Mientras haya sesión válida | Cookie httpOnly; mismatch → 401 |
 | Intentos / bloqueo PIN | Mesero | Seguridad | `pin_intentos_fallidos`, `pin_bloqueado_hasta` | Servidor | Corto (operativo) | RPC SECURITY DEFINER solo `service_role` |
 | `pey_bank_account_id` (ULID) | Mesero / negocio | Destino de propinas / cobro restaurante | `meseros` / `negocios` | Solo servidor (admin al editar); **REVOKE SELECT a anon/authenticated** | [PLAZO DE CONSERVACIÓN] | Columna oculta a anon; bitácora solo últimos 4 |
+| API key / secreto webhook pey | Negocio (titular operador) | Cobrar CoDi y verificar webhooks | `negocios.pey_api_key_cifrada`, `pey_webhook_secret_cifrado` (AES-256-GCM; AAD = negocio+campo); llave maestra `PEY_SECRETS_KEY` solo en env | Solo servidor (service_role); admin ve últimos 4 / URL webhook | Mientras el restaurante use pey + [PLAZO] | Cifrado en reposo; nunca `NEXT_PUBLIC_`; bitácora `pey_llaves_actualizar` solo últimos 4 |
 | CLABE | Mesero (en pey) | Cuenta CoDi | **No en Sale**; en pey | pey | Según pey | Remisión a pey |
 | Montos / hora de pago | Cliente (indirecto) | Confirmar cobro, ticket, reportes | `cobros` | Sesión; ticket público (montos) | [PLAZO DE CONSERVACIÓN] | Centavos enteros; "pagado" solo por webhook |
 | `pey_transaction_id`, `pey_qr_id` | — (técnico pey) | Idempotencia / conciliación | `cobros` | Servidor; ticket muestra últimos 4 del transactionId | [PLAZO DE CONSERVACIÓN] | Idempotencia por `webhook_event_id` |

@@ -13,8 +13,10 @@ Cookie no sensible `sale_restaurante` (slug, 1 año, SameSite=Lax) recuerda
 el local en `/entrar`.
 
 De pey solo usamos lo documentado en [docs.pey.mx](https://docs.pey.mx):
-crear cobro QR, webhook Standard Webhooks, identificadores de cuenta
-(ULID) — **no** inventamos campos. Una sola API key pey en env del servidor.
+`POST /codi/qr`, `GET /bank-account/:id`, webhooks
+`codi.qr.payment_received` y `bank.account.updated` — **no** inventamos
+campos. Cada restaurante guarda su API key y secreto cifrados (o
+`usa_pey_entorno` usa las vars de entorno del servidor).
 
 ## Públicas / bootstrap
 
@@ -25,7 +27,8 @@ crear cobro QR, webhook Standard Webhooks, identificadores de cuenta
 | POST | `/api/auth/logout` | Cookie | — | ok + limpia cookie | |
 | GET | `/api/setup` | Pública | — | `{ disponible }` o 404 | Solo si no hay admin con PIN |
 | POST | `/api/setup` | Pública + Origin | `{ demoToken, nombre, pin }` | `{ admin }` | Primer admin en negocio `slug=demo` |
-| POST | `/api/webhooks/pey` | pey (firma) | body + headers Standard Webhooks | ack | Marca pagado; lookup por pey ids (sin sesión) |
+| POST | `/api/webhooks/pey` | pey (firma) | body + headers Standard Webhooks | ack | Solo negocios con `usa_pey_entorno`; marca con `p_negocio_id` |
+| POST | `/api/webhooks/pey/[negocioId]` | pey (firma) | body + headers Standard Webhooks | ack | Secreto del restaurante; apiKeyId sticky; mark scoped |
 
 ## Sesión (cualquier rol)
 
@@ -65,6 +68,8 @@ crear cobro QR, webhook Standard Webhooks, identificadores de cuenta
 | POST | `/api/menu` | alta ítem | ítem | `negocio_id` = sesión |
 | PATCH | `/api/menu/[id]` | editar ítem | ítem | filtrado por negocio |
 | GET/PUT | `/api/negocio/propinas` | porcentajes / reparto cocina | config | negocio de sesión |
+| GET | `/api/negocio/pey` | — | `{ configurado, apiKeyUltimos4, webhookUrl, ultimoWebhookAt, cuentaRestaurante }` | Nunca expone key/secret |
+| PUT | `/api/negocio/pey` | `{ apiKey?, webhookSecret?, bankAccountId? }` | mismo shape que GET | Cifra llaves; verifica bank-account; bitácora últimos 4 |
 
 Página pública **sin API**: `/ticket/[token]` (server component; lookup por
 token, sin sesión) y `/privacidad`. Entrada: `/entrar?r=<slug>`.

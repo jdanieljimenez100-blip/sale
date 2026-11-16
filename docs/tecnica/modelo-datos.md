@@ -12,7 +12,7 @@ abiertas en tablas operativas).
 
 | Tabla | Columnas clave | Notas |
 |---|---|---|
-| `negocios` | `nombre`, `slug` UNIQUE, `pey_bank_account_id`, `propina_porcentajes`, `reparto_cocina_pct` | `slug` `^[a-z0-9-]{3,40}$`; demo = `demo` |
+| `negocios` | `nombre`, `slug` UNIQUE, `pey_bank_account_id`, `pey_bank_account_codi_status`, `pey_api_key_cifrada`, `pey_webhook_secret_cifrado`, `pey_api_key_ultimos4`, `pey_api_key_id`, `pey_webhook_ultimo_at`, `usa_pey_entorno`, `propina_porcentajes`, `reparto_cocina_pct` | `slug` `^[a-z0-9-]{3,40}$`; demo = `demo` (`usa_pey_entorno`); llaves AES-GCM con `PEY_SECRETS_KEY` |
 | `negocio_accesos` | `(mesero_id, negocio_id)` PK, `rol` (`admin`) | Admin cruzado; RLS sin policies |
 | `meseros` | `negocio_id`, `nombre`, `rol`, `pin_hash`, `pin_intentos_*`, `activo`, `sesion_version`, `pey_bank_account_id` | PIN scrypt; ULID pey sin CLABE |
 | `cuentas` | `negocio_id`, `mesa`, `mesero_id`, `estado`, `total_centavos`, `cerrada_at` | Sin SELECT público; **sin token de ticket** |
@@ -37,8 +37,9 @@ abiertas en tablas operativas).
 
 | Función | Para qué |
 |---|---|---|
-| `sale_insert_cobro` | Persistir cobro + QR; **deriva `negocio_id`** de cuenta o mesero (firma 8 args sin cambio) |
-| `sale_mark_cobro_pagado` | Marcar pagado desde webhook (idempotente; lookup por pey ids) |
+| `sale_insert_cobro` | Legado: persiste cobro + QR derivando `negocio_id` (borrar en Fase 3c) |
+| `sale_crear_cobro` | Persistir cobro + QR con `p_negocio_id` (valida cuenta/mesero o admin en `negocio_accesos`) |
+| `sale_mark_cobro_pagado` | Marcar pagado desde webhook; overload con `p_negocio_id` (scoped). Firma de 4 args se conserva temporalmente |
 | `sale_set_cuenta_estado` | Ajuste de estado (legado / casos puntuales) |
 | `sale_recalc_cuenta` | Recalcular totales/estado; inserta ticket si `pagada` |
 | `sale_expire_consumo_pendientes` | Expirar QR de consumo al regenerar/cobrar |

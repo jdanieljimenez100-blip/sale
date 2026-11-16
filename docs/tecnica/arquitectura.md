@@ -20,23 +20,27 @@ Next.js App Router  ──────────────────►  V
         │
         │  Standard Webhooks (firma)
         ▼
-   POST /api/webhooks/pey
+   POST /api/webhooks/pey/{negocioId}
+   (legacy demo: POST /api/webhooks/pey si usa_pey_entorno)
         │
         ▼
-   sale_mark_cobro_pagado → sale_recalc_cuenta
+   sale_mark_cobro_pagado(..., p_negocio_id) → sale_recalc_cuenta
    (si estado = pagada → INSERT tickets ON CONFLICT DO NOTHING)
 ```
 
 ## Flujo de cobro
 
 1. El mesero (o admin de la mesa) llama a cobrar / dividir → el servidor
-   crea un cobro vía cliente pey y persiste QR con RPC `sale_insert_cobro`.
+   resuelve credenciales pey del negocio (`obtenerConfigPey`), crea el QR
+   y persiste con RPC `sale_crear_cobro(..., p_negocio_id)`.
 2. El cliente escanea el QR CoDi y paga en su banco.
 3. pey envía un webhook firmado (Standard Webhooks) a
-   `/api/webhooks/pey`.
-4. El servidor verifica la firma con `PEY_WEBHOOK_SECRET`.
+   `/api/webhooks/pey/{negocioId}` (o `/api/webhooks/pey` si el negocio
+   usa llaves de entorno / demo).
+4. El servidor verifica la firma con el secreto de **ese** restaurante
+   (cifrado en DB, o `PEY_WEBHOOK_SECRET` si `usa_pey_entorno`).
 5. Idempotencia: el event id se guarda; reenvíos no vuelven a marcar
-   pagado.
+   pagado. El mark exige `cobros.negocio_id = p_negocio_id`.
 6. `sale_mark_cobro_pagado` + `sale_recalc_cuenta` actualizan montos y
    estado de la cuenta. **Solo aquí** puede pasar a `pagada`.
 7. Al quedar `pagada`, se inserta la fila en `tickets` (token aleatorio).

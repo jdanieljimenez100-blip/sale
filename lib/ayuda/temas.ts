@@ -66,7 +66,8 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
         pasos: [
           "Crea tu cuenta en portal.mipey.mx.",
           "En “Desarrollador”, crea UNA API key por restaurante.",
-          "En esa misma key configura el webhook con la URL de Sale (ruta /api/webhooks/pey) y guarda el secreto. Cada API key tiene un solo webhook y su propio secreto.",
+          "En esa misma key configura el webhook con la URL que Sale te muestra en Ajustes (incluye el id de tu restaurante) y guarda el secreto. Cada API key tiene un solo webhook y su propio secreto.",
+          "Copia la API key y el secreto del webhook y pégalos en Ajustes de Sale (solo admin). Sale los guarda cifrados; nunca los verás completos otra vez.",
           "Registra las cuentas bancarias (CLABE) del restaurante y de los meseros bajo esa misma API key. En Sale solo se guarda la referencia que pey te da, no la CLABE.",
           "La activación CoDi puede tardar hasta 5 días hábiles (el estado pasa de PENDING a ACTIVE).",
           "Prueba con un cobro de un centavo ($0.01) para confirmar que el webhook llega y la mesa se marca pagada.",
@@ -75,8 +76,8 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
       {
         titulo: "Seguridad de la API key",
         parrafos: [
-          "La API key y el secreto del webhook solo viven en variables de entorno del servidor (Vercel). Nunca las pongas en el código del front ni en una página pública.",
-          "Si sospechas que se filtraron, rota la key y el secreto en pey, actualiza el entorno y vuelve a desplegar.",
+          "La API key y el secreto del webhook se guardan cifrados por restaurante. Nunca van al navegador ni a una página pública.",
+          "Si sospechas que se filtraron, rota la key y el secreto en pey y vuelve a pegarlos en Ajustes de Sale.",
         ],
       },
     ],
@@ -223,7 +224,7 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
         titulo: "Pagué y no se refleja",
         parrafos: [
           "Confirma en la app del banco. Espera unos segundos: el webhook puede tardar un poco. No generes otro cobro del mismo monto hasta estar seguro de que el primero falló.",
-          "Si sigue sin aparecer, revisa con el admin que el webhook de pey apunte a la URL correcta de Sale y que la cuenta CoDi esté ACTIVE.",
+          "Si sigue sin aparecer, revisa con el admin que el webhook de pey apunte a la URL de tu restaurante (la de Ajustes) y que la cuenta CoDi esté ACTIVE.",
         ],
       },
       {
